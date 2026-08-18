@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SuperEnalotto Analyzer V4.5</title>
+<style>
+:root{--bg:#090e1b;--card:#141b30;--card2:#1c2541;--txt:#f7f8fc;--muted:#aab3ca;--acc:#54d98c;--warn:#f5b841;--bad:#ed6a5e;--line:#2c385f;--info:#6db4ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#080d19,#10182b);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:1200px;margin:auto;padding:18px}.hero{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.title{font-size:clamp(28px,5vw,48px);font-weight:950;letter-spacing:-1px}.sub{color:var(--muted);max-width:860px}.badge{padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--acc);font-weight:850}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:rgba(20,27,48,.97);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}@media(max-width:850px){.span4,.span6,.span8{grid-column:span 12}}h2{margin:0 0 10px;font-size:20px}.muted{color:var(--muted);font-size:14px}.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.btn{appearance:none;border:none;border-radius:14px;padding:12px 16px;font-weight:850;cursor:pointer;background:#2a3965;color:white}.btn.primary{background:var(--acc);color:#06130c}.btn.warn{background:var(--warn);color:#1a1304}.btn.info{background:var(--info);color:#07111f}.btn.danger{background:var(--bad);color:#1b0806}.numbers{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.ball{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#f8f9fb;color:#111;font-weight:950;font-size:22px;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.kpi{background:var(--card2);padding:12px;border-radius:14px}.kpi b{display:block;font-size:20px}.kpi span{font-size:12px;color:var(--muted)}@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}}.status{padding:10px 12px;border-radius:12px;background:#0d1529;border:1px solid var(--line);margin-top:10px}.tableWrap{overflow:auto}.table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.table th,.table td{border-bottom:1px solid var(--line);padding:8px;text-align:left;white-space:nowrap}.ok{color:var(--acc)}.warnText{color:var(--warn)}.bad{color:var(--bad)}.note{border-left:4px solid var(--warn);padding:10px 12px;background:#211d11;border-radius:10px;color:#f7e7b8}.small{font-size:12px}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#263253;color:#dce4ff;font-size:12px;margin:2px}.bar{height:10px;background:#0b1223;border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--acc)}select,input{background:#0c1326;color:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.archivebox{max-height:270px;overflow:auto;background:#0c1326;border:1px solid var(--line);border-radius:12px;padding:10px}.archiveRow{display:flex;justify-content:space-between;gap:10px;padding:7px 4px;border-bottom:1px solid #202b49;font-size:13px}.progress{height:12px;background:#0b1223;border-radius:99px;overflow:hidden;margin-top:10px}.progress>i{display:block;height:100%;width:0;background:var(--info);transition:width .2s}.sectionTitle{font-weight:900;margin-top:8px}.good{background:#10251b;border:1px solid #235f3d;padding:10px;border-radius:12px}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+</style>
+
+<style id="v42easy">
+.easyHero{padding:20px;border:1px solid #334155;border-radius:18px;margin:18px 0;background:rgba(255,255,255,.025)}
+.easySteps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.easyStep{padding:14px;border:1px solid #334155;border-radius:14px;text-align:center}
+.easyStep b{display:block;font-size:1.05rem;margin-bottom:5px}
+.easyHero .big{font-size:1.08rem;padding:14px 18px}
+.labWrap{margin-top:18px}
+.labWrap summary{cursor:pointer;font-weight:800;padding:14px;border:1px solid #334155;border-radius:12px}
+.labBody{padding-top:12px}
+@media(max-width:700px){.easySteps{grid-template-columns:1fr}.easyHero .big{width:100%;margin:5px 0}}
+</style>
+
+<style id="v43">
+.runbox{margin-top:14px;padding:14px;border:1px solid #475569;border-radius:14px}
+.runline{font-weight:800;font-size:1.05rem;margin-bottom:8px}
+.runsub{font-size:.9rem;opacity:.8;margin-top:7px}
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+button:disabled{opacity:.45;cursor:not-allowed}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head><body><div class="wrap">
+<div class="hero"><div><div class="title">SuperEnalotto Analyzer <span style="color:var(--acc)">V4</span></div><div class="sub">Archivio storico 1997→oggi con controllo di completezza, analisi dei legami fra sestine vincenti, generatore da 1 €, anti-folla e backtest walk-forward. Il programma cerca strutture statistiche, non promette previsioni certe.</div></div><div class="badge">1 € = 1 sestina</div></div>
+<section class="easyHero">
+<h2>🎯 MODALITÀ EASY · GIOCATA DA 1 €</h2>
+<div class="muted">Usa solo questi 3 passaggi. La V4.5 usa un motore alleggerito per smartphone: mostra l’avanzamento reale e restituisce il controllo al browser durante i calcoli.</div>
+<div class="easySteps">
+ <div class="easyStep"><b>1️⃣ AGGIORNA</b><span class="muted">Completa lo storico o aggiunge le nuove estrazioni.</span></div>
+ <div class="easyStep"><b>2️⃣ ANALIZZA</b><span class="muted">Fa automaticamente backtest e ricerca Campione V4.</span></div>
+ <div class="easyStep"><b>3️⃣ GENERA</b><span class="muted">Crea la sestina finale proposta.</span></div>
+</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+ <button class="big" id="easyUpdate" onclick="easyUpdateArchive()">1️⃣ AGGIORNA ARCHIVIO</button>
+ <button class="primary big" id="easyAnalyze" onclick="easyAnalyzeAll()">2️⃣ ANALIZZA TUTTO</button>
+ <button class="big" id="easyGenerateBtn" onclick="easyGenerate()">3️⃣ 🎯 GENERA 1 €</button>
+</div>
+<div class="runbox">
+<div id="easyStatus" class="runline">Pronto: premi 1️⃣ AGGIORNA ARCHIVIO.</div>
+<div style="height:12px;background:#0b1020;border-radius:99px;overflow:hidden"><div id="easyBar" style="height:100%;width:0%;background:currentColor;transition:width .25s"></div></div>
+<div id="easySub" class="runsub">Durante le operazioni vedrai qui cosa sta facendo.</div>
+</div>
+</section>
+<section class="card" style="margin-top:18px">
+<h2>⚙️ Dettaglio analisi automatica</h2>
+<div class="muted">È il percorso consigliato: verifica archivio → backtest → ricerca Campione V4 → pronto per la giocata. I dati sulle vincite sono separati e non servono per generare la sestina.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+<button class="primary" onclick="analyzeAll()">🚀 ANALIZZA TUTTO</button>
+<button onclick="stopAll()">■ STOP</button>
+</div>
+<div style="height:10px;background:#0b1020;border-radius:99px;overflow:hidden;margin-top:12px"><div id="masterBar" style="height:100%;width:0%;background:currentColor"></div></div>
+<div id="masterStatus" class="status">Pronto. Premi ANALIZZA TUTTO.</div>
+</section>
+<details class="labWrap"><summary>🔬 LABORATORIO STATISTICO · apri solo se vuoi vedere i dettagli</summary><div class="labBody"><div class="grid">
+<section class="card span8"><h2>1. Archivio storico verificato</h2><div class="muted">La V4 conserva il motore di archivio stabile della V3.1 e aggiunge un laboratorio di strategie con train/test separati e due parser di riserva. Scarica lo storico una sola volta e lo conserva nel browser; in seguito il pulsante aggiorna solo gli anni mancanti o l’anno corrente.</div><div class="controls"><button class="btn info" onclick="updateFullArchive()">↻ AGGIORNA / COMPLETA ARCHIVIO</button><button class="btn" onclick="exportCSV()">Esporta CSV</button><button class="btn danger" onclick="resetArchive()">Azzera cache</button></div><div id="archiveStatus" class="status">Archivio locale: caricamento…</div><div class="progress"><i id="prog"></i></div><div class="kpis" style="margin-top:10px"><div class="kpi"><b id="kDraws">0</b><span>estrazioni</span></div><div class="kpi"><b id="kFrom">—</b><span>prima data</span></div><div class="kpi"><b id="kTo">—</b><span>ultima data</span></div><div class="kpi"><b id="kYears">0</b><span>anni coperti</span></div></div></section>
+<section class="card span4"><h2>2. Genera 1 €</h2><div class="controls"><select id="strategy"><option value="champion">Campione V4</option><option value="hybrid">Ibrida</option><option value="stat">Statistica</option><option value="anti">Anti-folla</option><option value="random">Casuale</option></select><button class="btn primary" onclick="generateTicket()">GENERA 1 €</button></div><div id="ticket" class="numbers"></div><div id="ticketInfo" class="muted">Carica l'archivio completo per usare tutte le analisi.</div></section>
+<section class="card span6"><h2>3. Nessi fra numeri vincenti</h2><div class="muted">Misura quali numeri, coppie e terne sono apparsi insieme più spesso. Il valore “lift” confronta la frequenza osservata con quella attesa dall'indipendenza: &gt;1 = insieme più del previsto, &lt;1 = meno del previsto.</div><div id="links"></div></section>
+<section class="card span6"><h2>4. Forma delle sestine</h2><div class="muted">Cerca le strutture più comuni delle combinazioni storiche: pari/dispari, fasce, somma, consecutivi e ripetizioni rispetto al concorso precedente.</div><div id="shapes"></div></section>
+<section class="card span12"><h2>5. Numeri: frequenza, ritardo e co-occorrenza</h2><div class="controls"><select id="windowSel" onchange="renderAll()"><option value="0">Tutto lo storico</option><option value="50">Ultime 50</option><option value="100">Ultime 100</option><option value="300">Ultime 300</option><option value="1000">Ultime 1000</option></select></div><div class="tableWrap"><table class="table"><thead><tr><th>#</th><th>Uscite</th><th>Attese</th><th>Scarto</th><th>Ritardo</th><th>Coppia più forte</th></tr></thead><tbody id="numTable"></tbody></table></div></section>
+<section class="card span12"><h2>6. Backtest serio: algoritmo vs caso</h2><div class="muted">Ogni giocata viene generata usando <b>solo le estrazioni precedenti</b> al concorso testato. È il controllo fondamentale per evitare di “barare col futuro”.</div><div class="controls"><label>Concorsi <input id="btN" type="number" value="500" min="50" max="3000"></label><button class="btn warn" onclick="runBacktest()">🔬 ESEGUI BACKTEST MANUALE</button></div><div id="backtest" class="status">Non eseguito.</div></section>
+<section class="card span6"><h2>7. Casistiche delle vincite</h2><div class="muted">Analizziamo le caratteristiche delle sestine estratte e, quando disponibili, salviamo anche jackpot, numero totale di vincitori e premi distribuiti. Questi dati servono a studiare la condivisione dei premi, non a prevedere l’estrazione.</div><div class="controls"><button class="btn" onclick="updatePrizeData()">↻ 🔬 AGGIORNA VINCITE (OPZIONALE)</button><button onclick="stopPrizeUpdate()">■ STOP VINCITE</button></div><div id="prizeStatus" class="status">Dati monetari: non ancora acquisiti. <b>Opzionali:</b> non servono per Backtest, Campione V4 o Genera 1 €.</div><div id="cases"></div></section>
+<section class="card span6"><h2>8. Controllo casualità</h2><div class="muted">Confronto tra storico e modello teorico 6 su 90. Differenze piccole sono normali; il tool segnala solo deviazioni descrittive, non “numeri dovuti”.</div><div id="randomness"></div></section>
+<section class="card span12"><h2>9. Laboratorio V4 — trova una strategia e poi mettila alla prova</h2><div class="muted">Il periodo iniziale viene usato per confrontare famiglie di strategie; il periodo finale resta fuori dall'ottimizzazione. Il punteggio premia soprattutto 3 e 4 numeri, ma mostra anche il confronto con il caso.</div><div class="controls"><label>Test finale <input id="v4test" type="number" value="500" min="150" max="1200"></label><button class="btn primary" onclick="runV4Lab()">🔬 CERCA STRATEGIA V4 MANUALE</button></div><div id="v4lab" class="status">Non eseguito. Dopo l'analisi, la strategia migliore viene salvata come “Campione V4”.</div></section>
+<section class="card span12"><div class="note"><b>Importante:</b> ogni sestina specifica ha la stessa probabilità di uscire. Frequenze, ritardi, coppie e pattern servono per studiare lo storico e scegliere una giocata disciplinata, non trasformano il SuperEnalotto in un gioco prevedibile. L'indice anti-folla può semmai cercare combinazioni meno popolari tra i giocatori, riducendo la possibilità di dividere un eventuale premio.</div></section>
+</div></div>
+</div></details>
+<script>
+const STORE='se_v31_archive', PRIZE_STORE='se_v31_prizes'; let draws=[]; let prizes={};
+function fmtDate(d){return d||'—'}
+function save(){localStorage.setItem(STORE,JSON.stringify(draws));}
+function savePrizes(){localStorage.setItem(PRIZE_STORE,JSON.stringify(prizes));}
+function load(){try{draws=JSON.parse(localStorage.getItem(STORE)||'[]')}catch{draws=[]} try{prizes=JSON.parse(localStorage.getItem(PRIZE_STORE)||'{}')}catch{prizes={}} draws.sort((a,b)=>a.date.localeCompare(b.date)); renderAll(); renderPrizeStatus();}
+const months={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
+function italianDateToISO(s,year){s=s.toLowerCase().replace(/[^a-zàèéìòù0-9 ]/g,' ').replace(/\s+/g,' ').trim(); const m=s.match(/(\d{1,2})\s+([a-zàèéìòù]+)(?:\s+(\d{4}))?/); if(!m)return ''; const mo=months[m[2]]; if(!mo)return ''; return `${m[3]||year}-${String(mo).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+function parseComArchive(txt,year){
+ const raw=txt.split('\n').map(x=>x.replace(/^#+\s*/,'').trim()).filter(Boolean), out=[];
+ const dateRe=/(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+(\d{4})/i;
+ for(let i=0;i<raw.length;i++){
+   const dm=raw[i].match(dateRe); if(!dm||+dm[3]!==year) continue;
+   const date=italianDateToISO(dm[0],year); let nums=[],jolly=null,ss=null,contest=null;
+   for(let j=i+1;j<Math.min(i+35,raw.length);j++){
+     if(j>i+1 && dateRe.test(raw[j])) break;
+     const cm=raw[j].match(/(?:Concorso\s*(?:n\.?|Nº)?\s*)(\d{1,3})/i); if(cm) contest=+cm[1];
+     if(/^Jolly$/i.test(raw[j])){ for(let k=j+1;k<Math.min(j+4,raw.length);k++){if(/^\d{1,2}$/.test(raw[k])){jolly=+raw[k];break;}} continue; }
+     if(/^Super\s*Star$/i.test(raw[j])||/^Superstar$/i.test(raw[j])){ for(let k=j+1;k<Math.min(j+4,raw.length);k++){if(/^\d{1,2}$/.test(raw[k])){ss=+raw[k];break;}} continue; }
+     if(/^\d{1,2}$/.test(raw[j]) && nums.length<6){ const v=+raw[j]; if(v>=1&&v<=90) nums.push(v); }
+   }
+   if(nums.length===6){out.push({year,contest:contest||0,date,nums:[...new Set(nums)].sort((a,b)=>a-b),jolly,superstar:ss});}
+ }
+ return dedupeDraws(out);
+}
+function parseNetArchive(txt,year){
+ const lines=txt.split('\n').map(x=>x.trim()).filter(Boolean); const out=[];
+ for(let i=0;i<lines.length;i++){
+  const m=lines[i].match(/^(\d{1,3})\/(\d{2})\s*\|\s*(.+?)\s*\|?$/); if(!m)continue;
+  let date=italianDateToISO(m[3],year), nums=[],jolly=null,ss=null;
+  for(let j=i+1;j<Math.min(i+28,lines.length);j++){
+   if(/^\d{1,3}\/\d{2}\s*\|/.test(lines[j]))break;
+   const hits=[...lines[j].matchAll(/(?:^|\s)(\d{1,2})(?=\s|$)/g)].map(z=>+z[1]).filter(v=>v>=1&&v<=90);
+   for(const v of hits){if(nums.length<6&&!nums.includes(v))nums.push(v); else if(nums.length===6&&jolly==null&&!nums.includes(v))jolly=v;}
+  }
+  if(nums.length===6&&date)out.push({year,contest:+m[1],date,nums:nums.sort((a,b)=>a-b),jolly,superstar:ss});
+ }
+ return dedupeDraws(out);
+}
+function dedupeDraws(a){const m=new Map();a.forEach(d=>{if(d.date&&d.nums?.length===6)m.set(d.date,d)});return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date));}
+async function getText(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text();}
+async function fetchYear(y){
+ const sources=[
+  {u:`https://r.jina.ai/https://www.superenalotto.com/archivio/estrazioni-${y}`,p:parseComArchive},
+  {u:`https://r.jina.ai/http://www.superenalotto.com/archivio/estrazioni-${y}`,p:parseComArchive},
+  {u:`https://r.jina.ai/https://www.superenalotto.net/estrazioni/${y}`,p:parseNetArchive}
+ ];
+ let errors=[]; for(const s of sources){try{const t=await getText(s.u),p=s.p(t,y); if(p.length>=8)return p; errors.push('pochi dati '+p.length);}catch(e){errors.push(e.message)}} throw new Error(errors.join(' / '));
+}
+function coverage(){const nowY=new Date().getFullYear(), by={};draws.forEach(d=>(by[d.year]??=[]).push(d));let missing=[];for(let y=1997;y<=nowY;y++)if(!by[y]||by[y].length<8)missing.push(y);return{by,missing,complete:missing.length===0};}
+async function updateFullArchive(){
+ const st=document.getElementById('archiveStatus'),pg=document.getElementById('prog'),nowY=new Date().getFullYear(); let merged=new Map(draws.map(d=>[d.date,d])), ok=0,fail=[];
+ const cov=coverage(); let targets=[]; for(let y=1997;y<=nowY;y++) if(!cov.by[y]||cov.by[y].length<8||y===nowY)targets.push(y);
+ if(!targets.length)targets=[nowY]; st.innerHTML=`Controllo ${targets.length} anni…`;
+ for(let ix=0;ix<targets.length;ix++){const y=targets[ix];pg.style.width=((ix+1)/targets.length*100)+'%';try{const arr=await fetchYear(y);arr.forEach(d=>merged.set(d.date,d));ok++;st.innerHTML=`Anno ${y}: ${arr.length} concorsi acquisiti. Totale ${merged.size}.`;}catch(e){fail.push(y);st.innerHTML=`Anno ${y}: sorgenti non leggibili, continuo…`;}}
+ draws=[...merged.values()].sort((a,b)=>a.date.localeCompare(b.date));save();renderAll();const c=coverage();pg.style.width='100%';
+ st.innerHTML=c.complete?`<b class="ok">ARCHIVIO COMPLETO</b> · ${draws.length} estrazioni · 1997→${nowY}.`:`<b class="warnText">ARCHIVIO PARZIALE</b> · ${draws.length} estrazioni. Anni da riprovare: ${c.missing.join(', ')}.`;
+ return c.complete;
+}
+let prizeAbort=false;
+function stopPrizeUpdate(){prizeAbort=true;const st=document.getElementById('prizeStatus');if(st)st.innerHTML='<b class="warnText">Aggiornamento vincite fermato.</b> I dati già acquisiti sono stati salvati.';}
+async function getTextTimeout(url,ms=6500){
+ const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),ms);
+ try{const r=await fetch(url,{cache:'no-store',signal:ctl.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text();}
+ finally{clearTimeout(timer);}
+}
+async function updatePrizeData(limit=20){
+ if(!draws.length)return alert('Prima completa lo storico.');
+ prizeAbort=false; const st=document.getElementById('prizeStatus');
+ const pending=draws.slice().reverse().filter(d=>!prizes[d.date]).slice(0,limit);
+ if(!pending.length){st.innerHTML='<b class="ok">Nessun nuovo dato vincite da aggiornare in questo blocco.</b>';return;}
+ let done=0,ok=0; st.textContent=`Aggiorno un blocco di ${pending.length} concorsi. Puoi fermare senza perdere i dati…`;
+ for(const d of pending){
+   if(prizeAbort)break;
+   try{
+     const [Y,M,D]=d.date.split('-'); const url=`https://r.jina.ai/https://www.superenalotto.net/estrazioni/${D}-${M}-${Y}`;
+     const t=await getTextTimeout(url,6500);
+     const jackpot=(t.match(/Valore del\s*jackpot\s*([\d\.\s]+)\s*€/i)||[])[1];
+     const winners=(t.match(/Totale dei\s*vincitori\s*([\d\.\s]+)/i)||[])[1];
+     const total=(t.match(/Totale dei\s*premi vinti\s*([\d\.\s]+)\s*€/i)||[])[1];
+     const num=x=>x?+x.replace(/[^\d]/g,''):null;
+     const rec={jackpot:num(jackpot),winners:num(winners),totalPrizes:num(total)};
+     if(Object.values(rec).some(v=>v!=null)){prizes[d.date]=rec;ok++;}
+   }catch(e){}
+   done++; savePrizes();
+   st.textContent=`Dati vincite: ${done}/${pending.length} controllati · ${ok} acquisiti. Salvataggio progressivo attivo.`;
+   await new Promise(r=>setTimeout(r,80));
+ }
+ renderPrizeStatus();renderAll();
+}function renderPrizeStatus(){const vals=Object.values(prizes),n=vals.filter(x=>x&&Object.values(x).some(v=>v!=null)).length;const el=document.getElementById('prizeStatus');if(el)el.innerHTML=n?`Dati monetari memorizzati per <b>${n}</b> concorsi recenti.`:'Dati monetari: non ancora acquisiti.';}
+function resetArchive(){if(confirm('Cancellare la copia locale dello storico?')){localStorage.removeItem(STORE);localStorage.removeItem(PRIZE_STORE);draws=[];prizes={};renderAll();renderPrizeStatus();}}
+function exportCSV(){if(!draws.length)return alert('Archivio vuoto'); const head='data,concorso,n1,n2,n3,n4,n5,n6,jolly,superstar\n'; const body=draws.map(d=>[d.date,d.contest,...d.nums,d.jolly??'',d.superstar??''].join(',')).join('\n'); const b=new Blob([head+body],{type:'text/csv'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='superenalotto_storico_v3.csv';a.click();URL.revokeObjectURL(a.href);}
+function subset(){const n=+document.getElementById('windowSel').value; return n?draws.slice(-n):draws;}
+function stats(ds){const c=Array(91).fill(0),last=Array(91).fill(-1),pairs=new Map(); ds.forEach((d,idx)=>{d.nums.forEach(n=>{c[n]++;last[n]=idx}); for(let i=0;i<6;i++)for(let j=i+1;j<6;j++){const k=d.nums[i]+'-'+d.nums[j];pairs.set(k,(pairs.get(k)||0)+1)}}); return {c,last,pairs};}
+function bestPairFor(n,pairs,c,N){let best=null; for(let m=1;m<=90;m++){if(m===n)continue;const k=[n,m].sort((a,b)=>a-b).join('-'),obs=pairs.get(k)||0,exp=N*(c[n]/N)*(c[m]/N); const lift=exp?obs/exp:0; if(!best||lift>best.lift)best={m,obs,lift};} return best;}
+function shape(d){const even=d.nums.filter(n=>n%2===0).length; const bands=[d.nums.filter(n=>n<=30).length,d.nums.filter(n=>n>30&&n<=60).length,d.nums.filter(n=>n>60).length]; const sum=d.nums.reduce((a,b)=>a+b,0); let cons=0; for(let i=1;i<6;i++)if(d.nums[i]===d.nums[i-1]+1)cons++; return {even,bands,sum,cons};}
+function renderAll(){const ds=subset(),N=ds.length; document.getElementById('kDraws').textContent=draws.length;document.getElementById('kFrom').textContent=draws[0]?.date||'—';document.getElementById('kTo').textContent=draws.at(-1)?.date||'—';document.getElementById('kYears').textContent=new Set(draws.map(d=>d.year)).size; if(!draws.length)document.getElementById('archiveStatus').textContent='Archivio vuoto: premi “AGGIORNA ARCHIVIO COMPLETO”.'; else document.getElementById('archiveStatus').innerHTML=`Archivio locale pronto: <b>${draws.length}</b> estrazioni.`; if(!N){['numTable','links','shapes','cases','randomness'].forEach(id=>document.getElementById(id).innerHTML='');return;} const s=stats(ds),expected=N*6/90; let rows=''; for(let n=1;n<=90;n++){const rit=s.last[n]<0?'—':N-1-s.last[n],bp=bestPairFor(n,s.pairs,s.c,N); rows+=`<tr><td><b>${n}</b></td><td>${s.c[n]}</td><td>${expected.toFixed(1)}</td><td>${(s.c[n]-expected).toFixed(1)}</td><td>${rit}</td><td>${bp?`${n}-${bp.m} · ${bp.obs}x · lift ${bp.lift.toFixed(2)}`:'—'}</td></tr>`;} document.getElementById('numTable').innerHTML=rows;
+ const pairArr=[...s.pairs].map(([k,v])=>{const[a,b]=k.split('-').map(Number),exp=N*(s.c[a]/N)*(s.c[b]/N);return{k,v,lift:exp?v/exp:0}}).filter(x=>x.v>=2).sort((a,b)=>b.lift-a.lift).slice(0,12); document.getElementById('links').innerHTML='<div class="tableWrap"><table class="table"><tr><th>Coppia</th><th>Volte</th><th>Lift</th></tr>'+pairArr.map(x=>`<tr><td>${x.k}</td><td>${x.v}</td><td>${x.lift.toFixed(2)}</td></tr>`).join('')+'</table></div>';
+ const ev=Array(7).fill(0),ba=new Map(),sums=[],co=Array(6).fill(0); let repeats=Array(7).fill(0); ds.forEach((d,i)=>{const sh=shape(d);ev[sh.even]++;ba.set(sh.bands.join('-'),(ba.get(sh.bands.join('-'))||0)+1);sums.push(sh.sum);co[Math.min(5,sh.cons)]++;if(i){const r=d.nums.filter(n=>ds[i-1].nums.includes(n)).length;repeats[r]++;}}); const avg=sums.reduce((a,b)=>a+b,0)/N; const topBands=[...ba].sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('shapes').innerHTML=`<div class="sectionTitle">Pari/dispari più comune</div>${ev.map((v,e)=>v?`<span class="pill">${e} pari / ${6-e} dispari: ${(v/N*100).toFixed(1)}%</span>`:'').join('')}<div class="sectionTitle">Fasce 1-30 / 31-60 / 61-90</div>${topBands.map(x=>`<span class="pill">${x[0]}: ${(x[1]/N*100).toFixed(1)}%</span>`).join('')}<div class="sectionTitle">Somma media</div><div class="good"><b>${avg.toFixed(1)}</b> · mediana ${sums.sort((a,b)=>a-b)[Math.floor(N/2)]}</div><div class="sectionTitle">Ripetizioni dal concorso precedente</div>${repeats.map((v,r)=>v?`<span class="pill">${r} numeri: ${(v/Math.max(1,N-1)*100).toFixed(1)}%</span>`:'').join('')}`;
+ const consAny=ds.filter(d=>shape(d).cons>0).length,low31=ds.map(d=>d.nums.filter(n=>n<=31).length),avgLow=low31.reduce((a,b)=>a+b,0)/N; const pv=ds.map(d=>({d,p:prizes[d.date]})).filter(x=>x.p?.winners); const lowCrowd=pv.slice().sort((a,b)=>a.p.winners-b.p.winners).slice(0,10); let crowdNote=''; if(pv.length>=10){const avgAbove=lowCrowd.reduce((z,x)=>z+x.d.nums.filter(n=>n>31).length,0)/lowCrowd.length;crowdNote=`<div class="status">Nei 10 concorsi recenti con meno vincitori (campione monetario disponibile), media numeri &gt;31: <b>${avgAbove.toFixed(2)}</b>. È solo una correlazione descrittiva.</div>`;} document.getElementById('cases').innerHTML=`<div class="good">Sestine con almeno una coppia consecutiva: <b>${(consAny/N*100).toFixed(1)}%</b></div><div class="status">Numeri ≤31 per sestina: media <b>${avgLow.toFixed(2)}</b>. Una giocata con molti numeri sopra 31 non è più probabile, ma tende a essere meno “da compleanno”.</div><div class="status">Pattern più frequente per fasce: <b>${topBands[0]?.[0]||'—'}</b> (${topBands[0]?(topBands[0][1]/N*100).toFixed(1):0}%).</div>${crowdNote}`;
+ const chi=s.c.slice(1).reduce((z,o)=>z+(o-expected)*(o-expected)/expected,0); document.getElementById('randomness').innerHTML=`<div class="kpis"><div class="kpi"><b>${expected.toFixed(1)}</b><span>uscite attese/numero</span></div><div class="kpi"><b>${Math.min(...s.c.slice(1))}</b><span>min osservata</span></div><div class="kpi"><b>${Math.max(...s.c.slice(1))}</b><span>max osservata</span></div><div class="kpi"><b>${chi.toFixed(1)}</b><span>χ² descrittivo (89 df)</span></div></div>`;}
+function weightedChoice(weights,exclude){let arr=[];for(let n=1;n<=90;n++)if(!exclude.has(n))arr.push([n,Math.max(.0001,weights[n])]);let sum=arr.reduce((a,x)=>a+x[1],0),r=Math.random()*sum;for(const x of arr){r-=x[1];if(r<=0)return x[0]}return arr.at(-1)[0]}
+function candidate(ds,strategy){if(strategy==='random'||ds.length<20){let a=[];while(a.length<6){let n=1+Math.floor(Math.random()*90);if(!a.includes(n))a.push(n)}return a.sort((a,b)=>a-b)} const s=stats(ds),N=ds.length,exp=N*6/90,w=Array(91).fill(1);for(let n=1;n<=90;n++){const freq=(s.c[n]+2)/(exp+2),rit=s.last[n]<0?N:N-1-s.last[n];let ww=1;if(strategy==='stat')ww=.55*freq+.45*(1+Math.min(rit,60)/120);else ww=.45*freq+.25*(1+Math.min(rit,60)/120)+.30;if(strategy==='anti'&&n<=31)ww*=.68;w[n]=Math.max(.2,ww)} let best=null,bscore=-1e9;for(let t=0;t<2500;t++){let set=new Set;while(set.size<6)set.add(weightedChoice(w,set));let a=[...set].sort((a,b)=>a-b),sh=shape({nums:a}),score=0;if(strategy!=='stat'){score-=Math.abs(sh.even-3)*.45;score-=Math.abs(sh.bands[0]-2)*.28+Math.abs(sh.bands[1]-2)*.28+Math.abs(sh.bands[2]-2)*.28;score-=Math.abs(sh.sum-273)/90;score-=sh.cons*.18;} if(strategy==='anti'||strategy==='hybrid')score+=a.filter(n=>n>31).length*.18; if(score>bscore){best=a;bscore=score}}return best;}
+
+const V4STORE='se_v4_champion'; let v4champ=null; try{v4champ=JSON.parse(localStorage.getItem(V4STORE)||'null')}catch{}
+function v4Features(ds){const N=ds.length,s=stats(ds), recent=stats(ds.slice(-60)), long=stats(ds.slice(-300)), exp=Math.max(1,N*6/90), er=Math.max(1,Math.min(60,N)*6/90), el=Math.max(1,Math.min(300,N)*6/90);let f={};for(let n=1;n<=90;n++){let rit=s.last[n]<0?N:N-1-s.last[n];f[n]=[(recent.c[n]-er)/Math.sqrt(er),(long.c[n]-el)/Math.sqrt(el),Math.min(rit,80)/40-1,n>31?1:-1,(n%2===0)?1:-1];}return f}
+function v4Ticket(ds,w){if(ds.length<80)return candidate(ds,'random');const f=v4Features(ds);let ranked=[];for(let n=1;n<=90;n++){let sc=0;for(let j=0;j<w.length;j++)sc+=w[j]*f[n][j];ranked.push([sc,n])}ranked.sort((a,b)=>b[0]-a[0]);let pool=ranked.slice(0,28).map(x=>x[1]),best=null,bs=-1e9;for(let t=0;t<450;t++){let a=[];while(a.length<6){let n=pool[Math.floor(Math.random()*pool.length)];if(!a.includes(n))a.push(n)}a.sort((x,y)=>x-y);let sh=shape({nums:a}),q=-.22*Math.abs(sh.even-3)-.12*(Math.abs(sh.bands[0]-2)+Math.abs(sh.bands[1]-2)+Math.abs(sh.bands[2]-2))-.003*Math.abs(sh.sum-273);if(q>bs){bs=q;best=a}}return best}
+function v4Metric(r){return r[2]*1+r[3]*8+r[4]*90+r[5]*1500+r[6]*20000}
+function evalWeights(ds,start,end,w){let r=Array(7).fill(0);for(let i=start;i<end;i++){let hist=ds.slice(0,i),a=v4Ticket(hist,w);r[hits(a,ds[i].nums)]++}return r}
+function runV4Lab(){if(draws.length<900)return alert('Per il laboratorio V4 servono almeno 900 estrazioni nello storico.');let test=Math.min(+document.getElementById('v4test').value||500,Math.floor(draws.length*.35)), split=draws.length-test, trainStart=Math.max(350,split-Math.min(1200,split-350));let weights=[];const vals=[-1.2,-.6,0,.6,1.2];for(let a of vals)for(let b of [-.8,0,.8])for(let c of [-.7,0,.7]){weights.push([a,b,c,.15,0])}let scored=[];for(let w of weights){let r=evalWeights(draws,trainStart,split,w);scored.push({w,r,m:v4Metric(r)})}scored.sort((a,b)=>b.m-a.m);let top=scored.slice(0,5), tested=top.map(x=>({...x,t:evalWeights(draws,split,draws.length,x.w)}));tested.sort((a,b)=>v4Metric(b.t)-v4Metric(a.t));let champ=tested[0];v4champ=champ.w;localStorage.setItem(V4STORE,JSON.stringify(v4champ));localStorage.setItem('sel_v45_ready','1');let random=Array(7).fill(0);for(let i=split;i<draws.length;i++){random[hits(candidate(draws.slice(0,i),'random'),draws[i].nums)]++}let f=r=>[0,1,2,3,4,5,6].map(h=>`<td>${r[h]}</td>`).join('');let verdict=v4Metric(champ.t)>v4Metric(random)?'<span class="ok"><b>Il campione ha superato questo singolo test casuale.</b></span> Va confermato su altri periodi.':'<span class="warnText"><b>Il campione non ha battuto il caso nel test finale.</b></span> È un risultato importante: niente falsa illusione di previsione.';document.getElementById('v4lab').innerHTML=`<b>Training:</b> ${split-trainStart} concorsi · <b>test mai visto:</b> ${test} concorsi.<div class="tableWrap"><table class="table"><tr><th>Motore</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr><tr><td>Campione V4</td>${f(champ.t)}</tr><tr><td>Casuale</td>${f(random)}</tr></table></div><div>${verdict}</div><div class="small muted">Pesi campione: breve ${champ.w[0]}, lungo ${champ.w[1]}, ritardo ${champ.w[2]}, anti-folla ${champ.w[3]}. Il campione è ora selezionabile nel generatore da 1 €.</div>`}
+
+function generateTicket(){if(!draws.length)return alert('Prima aggiorna l’archivio.');const st=document.getElementById('strategy').value,a=(st==='champion'&&v4champ)?v4Ticket(draws,v4champ):candidate(draws,st==='champion'?'hybrid':st);document.getElementById('ticket').innerHTML=a.map(n=>`<span class="ball">${n}</span>`).join('');const sh=shape({nums:a});document.getElementById('ticketInfo').innerHTML=`Strategia <b>${st}</b> · somma ${sh.sum} · ${sh.even} pari/${6-sh.even} dispari · fasce ${sh.bands.join('/')} · numeri &gt;31: ${a.filter(n=>n>31).length}.`}
+function hits(a,b){return a.filter(n=>b.includes(n)).length}
+function runBacktest(){if(draws.length<150)return alert('Servono almeno 150 estrazioni.');let n=Math.min(+document.getElementById('btN').value||500,draws.length-100),start=draws.length-n;let res={hybrid:Array(7).fill(0),random:Array(7).fill(0),stat:Array(7).fill(0)};for(let i=start;i<draws.length;i++){const hist=draws.slice(0,i),win=draws[i].nums;['hybrid','random','stat'].forEach(k=>res[k][hits(candidate(hist,k),win)]++);}const fmt=k=>`<tr><td><b>${k}</b></td>${[0,1,2,3,4,5,6].map(h=>`<td>${res[k][h]}</td>`).join('')}</tr>`;document.getElementById('backtest').innerHTML=`<b>${n} concorsi walk-forward</b><div class="tableWrap"><table class="table"><tr><th>Motore</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>${fmt('hybrid')}${fmt('stat')}${fmt('random')}</table></div><div class="small muted">Un eventuale vantaggio su un singolo backtest può essere rumore. Per considerarlo interessante dovrebbe ripetersi in periodi diversi e su molte simulazioni casuali.</div>`;}
+
+
+
+
+function pauseUI(ms=20){return new Promise(r=>setTimeout(r,ms));}
+
+async function runBacktestMobile(){
+ if(draws.length<150)throw new Error('Servono almeno 150 estrazioni.');
+ let n=Math.min(180,draws.length-100),start=draws.length-n;
+ let res={hybrid:Array(7).fill(0),random:Array(7).fill(0),stat:Array(7).fill(0)};
+ for(let i=start;i<draws.length;i++){
+   const hist=draws.slice(0,i),win=draws[i].nums;
+   // one ticket per strategy; enough for comparison without freezing Android
+   for(const k of ['hybrid','random','stat'])res[k][hits(candidateFast(hist,k),win)]++;
+   if((i-start)%12===0){
+     easyUI('ANALISI IN CORSO…',`Fase 2/3: backtest ${i-start+1}/${n}.`,25+Math.round((i-start)/n*25),true);
+     await pauseUI();
+   }
+ }
+ const fmt=k=>`<tr><td><b>${k}</b></td>${[0,1,2,3,4,5,6].map(h=>`<td>${res[k][h]}</td>`).join('')}</tr>`;
+ const el=document.getElementById('backtest'); if(el)el.innerHTML=`<b>${n} concorsi walk-forward · modalità mobile</b><div class="tableWrap"><table class="table"><tr><th>Motore</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>${fmt('hybrid')}${fmt('stat')}${fmt('random')}</table></div>`;
+}
+function candidateFast(ds,strategy){
+ if(strategy==='random'||ds.length<20){let a=[];while(a.length<6){let n=1+Math.floor(Math.random()*90);if(!a.includes(n))a.push(n)}return a.sort((a,b)=>a-b)}
+ const s=stats(ds.slice(-Math.min(ds.length,300))),N=Math.min(ds.length,300),exp=Math.max(1,N*6/90),w=Array(91).fill(1);
+ for(let n=1;n<=90;n++){const freq=(s.c[n]+2)/(exp+2),rit=s.last[n]<0?N:N-1-s.last[n];let ww=.55*freq+.45*(1+Math.min(rit,60)/120);if(strategy==='hybrid'&&n<=31)ww*=.85;w[n]=Math.max(.2,ww)}
+ let best=null,bscore=-1e9;
+ for(let t=0;t<120;t++){let set=new Set;while(set.size<6)set.add(weightedChoice(w,set));let a=[...set].sort((a,b)=>a-b),sh=shape({nums:a}),score=-Math.abs(sh.even-3)*.35-Math.abs(sh.sum-273)/110;if(strategy==='hybrid')score+=a.filter(n=>n>31).length*.08;if(score>bscore){best=a;bscore=score}}
+ return best;
+}
+function v4TicketFast(ds,w){
+ if(ds.length<80)return candidateFast(ds,'random');
+ const f=v4Features(ds.slice(-Math.min(ds.length,360)));let ranked=[];
+ for(let n=1;n<=90;n++){let sc=0;for(let j=0;j<w.length;j++)sc+=w[j]*f[n][j];ranked.push([sc,n])}
+ ranked.sort((a,b)=>b[0]-a[0]);let pool=ranked.slice(0,24).map(x=>x[1]),best=null,bs=-1e9;
+ for(let t=0;t<55;t++){let a=[];while(a.length<6){let n=pool[Math.floor(Math.random()*pool.length)];if(!a.includes(n))a.push(n)}a.sort((x,y)=>x-y);let sh=shape({nums:a}),q=-.22*Math.abs(sh.even-3)-.1*(Math.abs(sh.bands[0]-2)+Math.abs(sh.bands[1]-2)+Math.abs(sh.bands[2]-2))-.003*Math.abs(sh.sum-273);if(q>bs){bs=q;best=a}}
+ return best;
+}
+async function evalWeightsMobile(ds,indices,w,label,base,span){
+ let r=Array(7).fill(0);
+ for(let z=0;z<indices.length;z++){const i=indices[z];r[hits(v4TicketFast(ds.slice(0,i),w),ds[i].nums)]++;
+   if(z%15===0){easyUI('ANALISI IN CORSO…',`${label} ${z+1}/${indices.length}`,base+Math.round(z/indices.length*span),true);await pauseUI();}
+ }
+ return r;
+}
+async function runV4LabMobile(){
+ if(draws.length<900)throw new Error('Servono almeno 900 estrazioni.');
+ const test=Math.min(180,Math.floor(draws.length*.25)),split=draws.length-test;
+ const trainStart=Math.max(350,split-420);
+ const trainIdx=[]; for(let i=trainStart;i<split;i+=3)trainIdx.push(i); // sampled training
+ const testIdx=[]; for(let i=split;i<draws.length;i+=2)testIdx.push(i); // independent test sample
+ const weights=[
+ [-1.2,-.8,-.7,.15,0],[-1.2,0,0,.15,0],[-.6,-.8,0,.15,0],[-.6,0,.7,.15,0],
+ [0,-.8,-.7,.15,0],[0,0,0,.15,0],[0,.8,.7,.15,0],[.6,-.8,.7,.15,0],
+ [.6,0,-.7,.15,0],[.6,.8,0,.15,0],[1.2,-.8,0,.15,0],[1.2,0,.7,.15,0]
+ ];
+ let scored=[];
+ for(let q=0;q<weights.length;q++){
+   const r=await evalWeightsMobile(draws,trainIdx,weights[q],`Fase 3/3: strategia ${q+1}/${weights.length} · training`,52,25);
+   scored.push({w:weights[q],r,m:v4Metric(r)});
+ }
+ scored.sort((a,b)=>b.m-a.m);let top=scored.slice(0,3),tested=[];
+ for(let q=0;q<top.length;q++){const t=await evalWeightsMobile(draws,testIdx,top[q].w,`Fase 3/3: verifica finale ${q+1}/3`,78,14);tested.push({...top[q],t})}
+ tested.sort((a,b)=>v4Metric(b.t)-v4Metric(a.t));let champ=tested[0];v4champ=champ.w;localStorage.setItem(V4STORE,JSON.stringify(v4champ));
+ let random=Array(7).fill(0);for(let z=0;z<testIdx.length;z++){let i=testIdx[z];random[hits(candidateFast(draws.slice(0,i),'random'),draws[i].nums)]++;if(z%20===0){easyUI('ANALISI IN CORSO…',`Confronto finale col caso ${z+1}/${testIdx.length}`,92, true);await pauseUI();}}
+ let f=r=>[0,1,2,3,4,5,6].map(h=>`<td>${r[h]}</td>`).join('');
+ let verdict=v4Metric(champ.t)>v4Metric(random)?'<span class="ok"><b>Campione sopra questo confronto casuale.</b></span>':'<span class="warnText"><b>Nessun vantaggio sul caso in questo test.</b></span>';
+ const el=document.getElementById('v4lab');if(el)el.innerHTML=`<b>Modalità mobile V4.5:</b> training campionato ${trainIdx.length} concorsi · test indipendente ${testIdx.length}.<div class="tableWrap"><table class="table"><tr><th>Motore</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr><tr><td>Campione V4</td>${f(champ.t)}</tr><tr><td>Casuale</td>${f(random)}</tr></table></div><div>${verdict}</div>`;
+}
+
+let easyBusy=false;
+function easyUI(main,sub='',pct=0,busy=false){
+ const a=document.getElementById('easyStatus'),b=document.getElementById('easySub'),bar=document.getElementById('easyBar');
+ if(a)a.innerHTML=(busy?'<span class="spinner"></span>':'')+main;
+ if(b)b.textContent=sub;if(bar)bar.style.width=pct+'%';
+ easyBusy=busy;
+ ['easyUpdate','easyAnalyze','easyGenerateBtn'].forEach(id=>{const x=document.getElementById(id);if(x)x.disabled=busy;});
+}
+async function easyUpdateArchive(){
+ if(easyBusy)return;
+ easyUI('AGGIORNAMENTO ARCHIVIO IN CORSO…','Controllo gli anni mancanti. Non chiudere la pagina.',8,true);
+ try{
+   await new Promise(r=>setTimeout(r,40));
+   const before=draws.length;
+   await updateFullArchive();
+   const c=coverage();
+   if(c.complete)easyUI('✅ ARCHIVIO PRONTO',`${draws.length} estrazioni disponibili. Ora premi 2️⃣ ANALIZZA TUTTO.`,100,false);
+   else easyUI('⚠️ ARCHIVIO PARZIALE',`${draws.length} estrazioni. Mancano: ${c.missing.join(', ')}. Puoi comunque riprovare AGGIORNA.`,Math.max(15,Math.round(c.years.length/(nowY-1996)*100)),false);
+ }catch(e){easyUI('❌ AGGIORNAMENTO INTERROTTO',String(e.message||e),0,false);}
+}
+async function easyAnalyzeAll(){
+ if(easyBusy)return;
+ if(draws.length<900){easyUI('⚠️ PRIMA COMPLETA L’ARCHIVIO',`Sono presenti solo ${draws.length} estrazioni. Premi 1️⃣ AGGIORNA ARCHIVIO.`,0,false);return;}
+ easyUI('ANALISI IN CORSO…','Fase 1/3: preparo i dati.',8,true);
+ try{
+   await pauseUI(80);
+   easyUI('ANALISI IN CORSO…','Fase 2/3: backtest mobile ottimizzato.',22,true);
+   await runBacktestMobile();
+   easyUI('ANALISI IN CORSO…','Fase 3/3: ricerca Campione V4 ottimizzata per smartphone.',52,true);
+   await runV4LabMobile();
+   easyUI('✅ ANALISI COMPLETATA','Campione V4 pronto. Ora premi 3️⃣ GENERA 1 €.',100,false);
+ }catch(e){easyUI('❌ ANALISI INTERROTTA',String(e.message||e),0,false);}
+}
+function easyGenerate(){
+ if(easyBusy)return;
+ try{
+   if(!v4champ){
+     try{const z=JSON.parse(localStorage.getItem(V4STORE)||'null');if(Array.isArray(z))v4champ=z;}catch(e){}
+   }
+   if(!v4champ){easyUI('⚠️ CAMPIONE NON TROVATO','Premi 2️⃣ ANALIZZA TUTTO e attendi “ANALISI COMPLETATA”.',0,false);return;}
+   const ticket=v4TicketFast(draws,v4champ);
+   if(!ticket||ticket.length!==6)throw new Error('Sestina non generata');
+   // Render directly in the normal ticket/output area if present.
+   const ids=['ticket','result','generated','output'];
+   let el=null;for(const id of ids){const x=document.getElementById(id);if(x){el=x;break;}}
+   const balls=ticket.map(n=>`<span class="ball">${n}</span>`).join('');
+   if(el)el.innerHTML=`<div class="muted">Campione V4.5 · giocata proposta</div><div class="balls">${balls}</div>`;
+   // Also always render a large Easy result, so it cannot be hidden lower in the page.
+   let box=document.getElementById('easyTicket');
+   if(!box){
+     box=document.createElement('div');box.id='easyTicket';box.className='runbox';
+     const hero=document.querySelector('.easyHero');if(hero)hero.appendChild(box);
+   }
+   box.innerHTML=`<div style="font-weight:900;font-size:1.1rem">🎯 LA TUA SESTINA DA 1 €</div><div class="balls" style="margin-top:12px">${balls}</div><div class="runsub">Generata dal Campione V4.5. Ogni sestina resta comunque equiprobabile nell’estrazione.</div>`;
+   easyUI('✅ GIOCATA GENERATA',ticket.join(' · '),100,false);
+ }catch(e){easyUI('❌ ERRORE GENERAZIONE',String(e.message||e),0,false);}
+}
+let masterAbort=false;
+function setMaster(msg,pct){
+ const el=document.getElementById('masterStatus'), bar=document.getElementById('masterBar');
+ if(el)el.innerHTML=msg;if(bar)bar.style.width=Math.max(0,Math.min(100,pct))+'%';
+}
+function stopAll(){masterAbort=true;prizeAbort=true;setMaster('<b class="warnText">Analisi fermata.</b> I dati già salvati restano disponibili.',0);}
+async function analyzeAll(){
+ masterAbort=false;
+ try{
+   setMaster('<b>1/4 · Verifica archivio…</b>',8);
+   let c=coverage();
+   if(!c.complete){await updateFullArchive(); c=coverage();}
+   if(masterAbort)return;
+   if(draws.length<900){setMaster('<b class="warnText">Archivio insufficiente.</b> Servono almeno 900 estrazioni per il laboratorio V4.',0);return;}
+   setMaster('<b>2/4 · Backtest strategie base…</b>',42);
+   await new Promise(r=>setTimeout(r,30)); runBacktest();
+   if(masterAbort)return;
+   setMaster('<b>3/4 · Ricerca Campione V4…</b>',66);
+   await new Promise(r=>setTimeout(r,30)); runV4Lab();
+   if(masterAbort)return;
+   setMaster('<b>4/4 · Finalizzazione…</b>',92);
+   await new Promise(r=>setTimeout(r,50));
+   setMaster('<b class="ok">ANALISI COMPLETATA ✓</b> · Ora scegli “Campione V4” e premi GENERA 1 €.',100);
+ }catch(e){
+   setMaster('<b class="bad">Analisi interrotta:</b> '+String(e.message||e)+'. I dati già salvati non sono persi.',0);
+ }
+}
+
+load();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(console.error));
+}
+</script>
+</body></html>

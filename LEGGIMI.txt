@@ -1,0 +1,11 @@
+SuperEnalotto Analyzer — pacchetto PWA pronto per GitHub Pages / Netlify
+
+Pubblica TUTTI i file e le cartelle mantenendo questa struttura:
+- index.html
+- manifest.webmanifest
+- service-worker.js
+- icons/
+
+IMPORTANTE: non aprire index.html come file locale. La PWA va aperta da un indirizzo HTTPS (GitHub Pages o Netlify).
+Dopo la pubblicazione, su Chrome Android apri il sito e usa il menu ⋮ > Installa app / Aggiungi a schermata Home.
+Se avevi una vecchia scorciatoia, rimuovila prima e poi riapri il sito aggiornato.

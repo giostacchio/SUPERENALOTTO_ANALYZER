@@ -1,4 +1,4 @@
-const CACHE = 'pwa-SUPERENALOTTO_ANALYZER_PWA_V4_5-v2-rootfix';
+const CACHE = 'pwa-SUPERENALOTTO_ANALYZER_V5-v1';
 const CORE = [
   './',
   './index.html',
@@ -34,10 +34,10 @@ self.addEventListener('fetch', event => {
   if (u.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(resp => {
+    fetch(req).then(resp => {
       const copy = resp.clone();
       caches.open(CACHE).then(c => c.put(req, copy));
       return resp;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
   );
 });

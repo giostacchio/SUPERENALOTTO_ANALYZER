@@ -1,216 +1,34 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020">
-<title>SuperEnalotto Analyzer V5</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020">
+<title>SuperEnalotto Analyzer V5.1</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico" sizes="any"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#080d19;--card:#141b30;--card2:#1d2743;--txt:#f7f8fc;--muted:#aab3ca;--acc:#54d98c;--warn:#f5b841;--bad:#ed6a5e;--info:#6db4ff;--line:#2d385c}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#080d19,#10182b);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.wrap{max-width:980px;margin:auto;padding:18px}.hero{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.title{font-weight:950;font-size:clamp(30px,6vw,48px);letter-spacing:-1px}.v{color:var(--acc)}.sub,.muted{color:var(--muted)}.badge{border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--acc);font-weight:850}
-.card{background:rgba(20,27,48,.97);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:16px;box-shadow:0 10px 28px rgba(0,0,0,.2)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.step{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}.step b{display:block;margin-bottom:5px}
-.controls{display:flex;gap:10px;flex-wrap:wrap}.btn,button{border:0;border-radius:14px;padding:13px 16px;background:#2a3965;color:#fff;font-weight:850;cursor:pointer}.primary{background:var(--acc);color:#06130c}.info{background:var(--info);color:#07111f}.warn{background:var(--warn);color:#1a1304}.danger{background:var(--bad);color:#1b0806}button:disabled{opacity:.45;cursor:not-allowed}
-.status{margin-top:12px;border:1px solid var(--line);background:#0d1529;border-radius:14px;padding:12px}.progress{height:11px;background:#0b1223;border-radius:99px;overflow:hidden;margin-top:10px}.progress i{display:block;height:100%;width:0;background:var(--info);transition:width .2s}.spinner{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:7px}@keyframes spin{to{transform:rotate(360deg)}}
-.balls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.ball{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#111;font-size:22px;font-weight:950;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.kpi{background:var(--card2);border-radius:14px;padding:12px}.kpi b{font-size:22px;display:block}.kpi span{font-size:12px;color:var(--muted)}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}.scroll{overflow:auto}.ok{color:var(--acc)}.warnText{color:var(--warn)}.bad{color:var(--bad)}.note{border-left:4px solid var(--warn);background:#211d11;color:#f5e5b4;padding:11px;border-radius:10px}.small{font-size:12px}
-details summary{cursor:pointer;font-weight:850}.sectionTitle{font-weight:900;margin:10px 0 6px}
-input{background:#0c1326;color:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
-@media(max-width:700px){.steps,.grid{grid-template-columns:1fr}.controls button{width:100%}.ball{width:52px;height:52px;font-size:20px}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="hero">
-    <div><div class="title">SuperEnalotto Analyzer <span class="v">V5</span></div>
-    <div class="sub">Esperimento controllato: una sola sestina da 1 €, backtest walk-forward e confronto con 1.000 sestine casuali virtuali.</div></div>
-    <div class="badge">1 € = 1 sestina</div>
-  </div>
-
-  <section class="card">
-    <h2>🎯 MODALITÀ EASY</h2>
-    <div class="steps">
-      <div class="step"><b>1️⃣ AGGIORNA</b><span class="muted">Recupera le nuove estrazioni.</span></div>
-      <div class="step"><b>2️⃣ ANALIZZA</b><span class="muted">Sceglie il Campione V5 con backtest.</span></div>
-      <div class="step"><b>3️⃣ GENERA</b><span class="muted">Crea 1 sestina + 1.000 ombre casuali.</span></div>
-    </div>
-    <div class="controls">
-      <button id="bUpdate" class="info" onclick="easyUpdate()">1️⃣ AGGIORNA ARCHIVIO</button>
-      <button id="bAnalyze" class="primary" onclick="easyAnalyze()">2️⃣ ANALIZZA TUTTO</button>
-      <button id="bGenerate" onclick="easyGenerate()">3️⃣ 🎯 GENERA 1 €</button>
-    </div>
-    <div class="status"><div id="mainStatus">Pronto: premi 1️⃣ AGGIORNA ARCHIVIO.</div><div class="progress"><i id="mainBar"></i></div><div id="mainSub" class="muted small" style="margin-top:7px">La V5 non promette previsioni: misura se il metodo batte davvero il caso.</div></div>
-    <div id="ticketBox"></div>
-  </section>
-
-  <section class="card">
-    <h2>📊 VERIFICA V5 · algoritmo contro il caso</h2>
-    <div class="grid">
-      <div class="kpi"><b id="kDraws">0</b><span>estrazioni archivio</span></div>
-      <div class="kpi"><b id="kPending">0</b><span>giocate in attesa</span></div>
-      <div class="kpi"><b id="kPlayed">0</b><span>giocate verificate</span></div>
-      <div class="kpi"><b id="kAvg">—</b><span>media numeri centrati</span></div>
-    </div>
-    <div id="benchmark" class="status">Nessun confronto disponibile.</div>
-  </section>
-
-  <section class="card">
-    <h2>🧾 DIARIO RISULTATI REALI</h2>
-    <div class="muted">Quando aggiorni l’archivio, la V5 prova ad abbinare automaticamente ogni sestina generata alla prima estrazione successiva.</div>
-    <div id="diary" class="scroll" style="margin-top:10px"></div>
-    <div class="controls" style="margin-top:10px"><button onclick="exportDiary()">Esporta diario CSV</button><button class="danger" onclick="resetDiary()">Azzera diario V5</button></div>
-  </section>
-
-  <details class="card">
-    <summary>🔬 DETTAGLI TECNICI</summary>
-    <div style="margin-top:12px" class="muted">Il Campione V5 viene scelto con test walk-forward su concorsi passati. Ogni concorso di test usa solo dati precedenti. La giocata reale viene poi confrontata con 1.000 sestine casuali virtuali generate nello stesso momento. Un singolo risultato non basta: serve una serie lunga.</div>
-    <div id="lab" class="status">Analisi non eseguita.</div>
-    <div class="note" style="margin-top:12px"><b>Importante:</b> ogni sestina specifica resta equiprobabile. Questo strumento serve a verificare una strategia, non a garantire vincite.</div>
-  </details>
-</div>
+:root{--bg:#080d19;--card:#141b30;--card2:#1d2743;--txt:#f7f8fc;--muted:#aab3ca;--acc:#54d98c;--warn:#f5b841;--bad:#ed6a5e;--info:#6db4ff;--line:#2d385c}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#080d19,#10182b);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:980px;margin:auto;padding:18px}.hero{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.title{font-weight:950;font-size:clamp(30px,6vw,48px);letter-spacing:-1px}.v{color:var(--acc)}.sub,.muted{color:var(--muted)}.badge{border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--acc);font-weight:850}.card{background:rgba(20,27,48,.97);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:16px;box-shadow:0 10px 28px rgba(0,0,0,.2)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.step{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}.step b{display:block;margin-bottom:5px}.controls{display:flex;gap:10px;flex-wrap:wrap}.btn,button{border:0;border-radius:14px;padding:13px 16px;background:#2a3965;color:#fff;font-weight:850;cursor:pointer}.primary{background:var(--acc);color:#06130c}.info{background:var(--info);color:#07111f}.danger{background:var(--bad);color:#1b0806}button:disabled{opacity:.45}.status{margin-top:12px;border:1px solid var(--line);background:#0d1529;border-radius:14px;padding:12px}.progress{height:11px;background:#0b1223;border-radius:99px;overflow:hidden;margin-top:10px}.progress i{display:block;height:100%;width:0;background:var(--info);transition:width .2s}.spinner{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:7px}@keyframes spin{to{transform:rotate(360deg)}}.balls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.ball{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#111;font-size:22px;font-weight:950;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.kpi{background:var(--card2);border-radius:14px;padding:12px}.kpi b{font-size:22px;display:block}.kpi span{font-size:12px;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}.scroll{overflow:auto}.ok{color:var(--acc)}.warnText{color:var(--warn)}.bad{color:var(--bad)}.note{border-left:4px solid var(--warn);background:#211d11;color:#f5e5b4;padding:11px;border-radius:10px}.small{font-size:12px}.compareGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}.compareCell{background:var(--card2);border-radius:10px;padding:8px 3px;text-align:center}.compareCell b{display:block;font-size:17px}.compareCell span{font-size:10px;color:var(--muted)}details summary{cursor:pointer;font-weight:850}@media(max-width:700px){.steps,.grid{grid-template-columns:1fr}.controls button{width:100%}.ball{width:52px;height:52px;font-size:20px}.compareGrid{grid-template-columns:repeat(4,1fr)}}
+</style></head><body><div class="wrap">
+<div class="hero"><div><div class="title">SuperEnalotto Analyzer <span class="v">V5.1</span></div><div class="sub">Esperimento controllato: 1 sestina reale contro 1.000 sestine casuali virtuali.</div></div><div class="badge">1 € = 1 sestina</div></div>
+<section class="card"><h2>🎯 MODALITÀ EASY</h2><div class="steps"><div class="step"><b>1️⃣ AGGIORNA</b><span class="muted">Recupera le nuove estrazioni.</span></div><div class="step"><b>2️⃣ ANALIZZA</b><span class="muted">Sceglie il Campione V5.</span></div><div class="step"><b>3️⃣ GENERA</b><span class="muted">Crea 1 sestina + 1.000 casuali.</span></div></div><div class="controls"><button id="bUpdate" class="info" onclick="easyUpdate()">1️⃣ AGGIORNA ARCHIVIO</button><button id="bAnalyze" class="primary" onclick="easyAnalyze()">2️⃣ ANALIZZA TUTTO</button><button id="bGenerate" onclick="easyGenerate()">3️⃣ 🎯 GENERA 1 €</button></div><div class="status"><div id="mainStatus">Pronto: premi 1️⃣ AGGIORNA ARCHIVIO.</div><div class="progress"><i id="mainBar"></i></div><div id="mainSub" class="muted small" style="margin-top:7px">La V5.1 misura il metodo contro il caso.</div></div><div id="ticketBox"></div></section>
+<section class="card"><h2>🆚 CONFRONTO CON 1.000 CASUALI</h2><div class="muted">Dopo l'estrazione vedi quanti 0, 1, 2, 3, 4, 5 e 6 hanno ottenuto le 1.000 sestine virtuali e dove si è piazzata la nostra.</div><div id="lastCompare" class="status">Nessun confronto ancora disponibile.</div></section>
+<section class="card"><h2>📊 VERIFICA V5.1 · algoritmo contro il caso</h2><div class="grid"><div class="kpi"><b id="kDraws">0</b><span>estrazioni archivio</span></div><div class="kpi"><b id="kPending">0</b><span>giocate in attesa</span></div><div class="kpi"><b id="kPlayed">0</b><span>giocate verificate</span></div><div class="kpi"><b id="kAvg">—</b><span>media numeri centrati</span></div></div><div id="benchmark" class="status">Nessun confronto disponibile.</div></section>
+<section class="card"><h2>🧾 DIARIO RISULTATI REALI</h2><div id="diary" class="scroll"></div><div class="controls" style="margin-top:10px"><button onclick="exportDiary()">Esporta diario CSV</button><button class="danger" onclick="resetDiary()">Azzera diario V5</button></div></section>
+<details class="card"><summary>🔬 DETTAGLI TECNICI</summary><div id="lab" class="status">Analisi non eseguita.</div><div class="note" style="margin-top:12px"><b>Importante:</b> ogni sestina specifica resta equiprobabile. Il confronto serve a misurare la strategia, non a prevedere le estrazioni.</div></details></div>
 <script>
-const STORE='se_v31_archive';
-const V5_MODEL='se_v5_model';
-const V5_DIARY='se_v5_diary';
-let draws=[], model=null, diary=[], busy=false;
-
-function setUI(main,sub='',pct=0,isBusy=false){
-  document.getElementById('mainStatus').innerHTML=(isBusy?'<span class="spinner"></span>':'')+main;
-  document.getElementById('mainSub').textContent=sub;
-  document.getElementById('mainBar').style.width=Math.max(0,Math.min(100,pct))+'%';
-  busy=isBusy;['bUpdate','bAnalyze','bGenerate'].forEach(id=>document.getElementById(id).disabled=isBusy);
-}
-function pause(ms=20){return new Promise(r=>setTimeout(r,ms))}
-function dedupeDraws(a){const m=new Map();for(const d of a){if(d?.date&&Array.isArray(d.nums)&&d.nums.length===6)m.set(d.date,d)}return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date))}
-function load(){
-  try{draws=JSON.parse(localStorage.getItem(STORE)||'[]')}catch{draws=[]}
-  try{model=JSON.parse(localStorage.getItem(V5_MODEL)||'null')}catch{model=null}
-  try{diary=JSON.parse(localStorage.getItem(V5_DIARY)||'[]')}catch{diary=[]}
-  draws=dedupeDraws(draws); evaluatePending(); render();
-}
-function saveDraws(){localStorage.setItem(STORE,JSON.stringify(draws))}
-function saveDiary(){localStorage.setItem(V5_DIARY,JSON.stringify(diary))}
-function saveModel(){localStorage.setItem(V5_MODEL,JSON.stringify(model))}
-const months={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
-function italianDateToISO(s,year){s=s.toLowerCase().replace(/[^a-zàèéìòù0-9 ]/g,' ').replace(/\s+/g,' ').trim();const m=s.match(/(\d{1,2})\s+([a-zàèéìòù]+)(?:\s+(\d{4}))?/);if(!m||!months[m[2]])return'';return `${m[3]||year}-${String(months[m[2]]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`}
-function parseComArchive(txt,year){
-  const raw=txt.split('\n').map(x=>x.replace(/^#+\s*/,'').trim()).filter(Boolean),out=[];
-  const dateRe=/(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+(\d{4})/i;
-  for(let i=0;i<raw.length;i++){const dm=raw[i].match(dateRe);if(!dm||+dm[3]!==year)continue;const date=italianDateToISO(dm[0],year);let nums=[],contest=0;
-    for(let j=i+1;j<Math.min(i+35,raw.length);j++){if(j>i+1&&dateRe.test(raw[j]))break;const cm=raw[j].match(/Concorso\s*(?:n\.?|Nº)?\s*(\d{1,3})/i);if(cm)contest=+cm[1];if(/^\d{1,2}$/.test(raw[j])&&nums.length<6){const v=+raw[j];if(v>=1&&v<=90&&!nums.includes(v))nums.push(v)}}
-    if(nums.length===6)out.push({year,contest,date,nums:nums.sort((a,b)=>a-b)});
-  }return dedupeDraws(out)
-}
-function parseNetArchive(txt,year){
-  const lines=txt.split('\n').map(x=>x.trim()).filter(Boolean),out=[];
-  for(let i=0;i<lines.length;i++){const m=lines[i].match(/^(\d{1,3})\/(\d{2})\s*\|\s*(.+?)\s*\|?$/);if(!m)continue;let date=italianDateToISO(m[3],year),nums=[];
-    for(let j=i+1;j<Math.min(i+28,lines.length);j++){if(/^\d{1,3}\/\d{2}\s*\|/.test(lines[j]))break;const hits=[...lines[j].matchAll(/(?:^|\s)(\d{1,2})(?=\s|$)/g)].map(z=>+z[1]).filter(v=>v>=1&&v<=90);for(const v of hits)if(nums.length<6&&!nums.includes(v))nums.push(v)}
-    if(nums.length===6&&date)out.push({year,contest:+m[1],date,nums:nums.sort((a,b)=>a-b)});
-  }return dedupeDraws(out)
-}
-async function getText(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
-async function fetchYear(y){
-  const sources=[
-    {u:`https://r.jina.ai/https://www.superenalotto.com/archivio/estrazioni-${y}`,p:parseComArchive},
-    {u:`https://r.jina.ai/https://www.superenalotto.net/estrazioni/${y}`,p:parseNetArchive}
-  ];let err=[];
-  for(const s of sources){try{const t=await getText(s.u),a=s.p(t,y);if(a.length>=8)return a;err.push('pochi dati '+a.length)}catch(e){err.push(e.message)}}
-  throw new Error(err.join(' / '))
-}
-function coverage(){const nowY=new Date().getFullYear(),by={};for(const d of draws)(by[d.year]??=[]).push(d);let missing=[];for(let y=1997;y<=nowY;y++)if(!by[y]||by[y].length<8)missing.push(y);return{by,missing,complete:missing.length===0}}
-async function updateArchive(){
-  const nowY=new Date().getFullYear(),cov=coverage(),merged=new Map(draws.map(d=>[d.date,d]));
-  let targets=[];for(let y=1997;y<=nowY;y++)if(!cov.by[y]||cov.by[y].length<8||y===nowY)targets.push(y);if(!targets.length)targets=[nowY];
-  let fail=[];
-  for(let i=0;i<targets.length;i++){const y=targets[i];setUI('AGGIORNAMENTO ARCHIVIO…',`Anno ${y} · ${i+1}/${targets.length}`,5+Math.round(70*(i/targets.length)),true);try{(await fetchYear(y)).forEach(d=>merged.set(d.date,d))}catch(e){fail.push(y)}await pause(25)}
-  draws=dedupeDraws([...merged.values()]);saveDraws();evaluatePending();render();return fail
-}
-function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
-function hashSeed(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-function sample6(rng){const a=Array.from({length:90},(_,i)=>i+1);for(let i=0;i<6;i++){const j=i+Math.floor(rng()*(90-i));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,6).sort((a,b)=>a-b)}
-function hits(a,b){let n=0;for(const x of a)if(b.includes(x))n++;return n}
-function buildStats(hist){
-  const N=hist.length,c=Array(91).fill(0),last=Array(91).fill(-1),pairs=Array.from({length:91},()=>Array(91).fill(0));
-  hist.forEach((d,i)=>{for(const n of d.nums){c[n]++;last[n]=i}for(let x=0;x<6;x++)for(let y=x+1;y<6;y++){const a=d.nums[x],b=d.nums[y];pairs[a][b]++;pairs[b][a]++}});
-  return{N,c,last,pairs}
-}
-const CANDIDATES=[
- {name:'Bilanciata',freq:.45,delay:.15,pair:.25,anti:.15},
- {name:'Frequenza soft',freq:.60,delay:.05,pair:.20,anti:.15},
- {name:'Coppie soft',freq:.30,delay:.10,pair:.45,anti:.15},
- {name:'Anti-folla',freq:.25,delay:.10,pair:.15,anti:.50},
- {name:'Neutra',freq:.25,delay:.25,pair:.25,anti:.25}
-];
-function scoreNum(n,st,sel,w){
-  const exp=Math.max(1,st.N*6/90),freq=st.c[n]/exp;
-  const delay=st.last[n]<0?1:Math.min(2,(st.N-1-st.last[n])/15);
-  let pair=1;if(sel.length){pair=sel.reduce((s,m)=>s+st.pairs[n][m],0)/sel.length;pair=1+pair/8}
-  const anti=n<=31?.55:1.15;
-  return Math.max(.03,w.freq*freq+w.delay*delay+w.pair*pair+w.anti*anti)
-}
-function weightedTicket(hist,w,rng){
-  const st=buildStats(hist),sel=[];
-  while(sel.length<6){
-    const pool=[];let total=0;
-    for(let n=1;n<=90;n++){if(sel.includes(n))continue;const sc=scoreNum(n,st,sel,w);pool.push([n,sc]);total+=sc}
-    let r=rng()*total,pick=pool[pool.length-1][0];for(const [n,sc] of pool){r-=sc;if(r<=0){pick=n;break}}sel.push(pick)
-  }return sel.sort((a,b)=>a-b)
-}
-function metric(dist){return dist[2]*1+dist[3]*8+dist[4]*80+dist[5]*1200+dist[6]*20000}
-async function analyzeV5(){
-  if(draws.length<900)throw new Error(`Archivio insufficiente: ${draws.length} estrazioni`);
-  const testN=Math.min(320,Math.max(140,Math.floor(draws.length*.10))),start=draws.length-testN,results=[];
-  for(let ci=0;ci<CANDIDATES.length;ci++){const w=CANDIDATES[ci],dist=Array(7).fill(0);
-    for(let i=start;i<draws.length;i++){const hist=draws.slice(Math.max(0,i-800),i),rng=mulberry32(hashSeed(`${i}-${ci}-v5`)),t=weightedTicket(hist,w,rng);dist[hits(t,draws[i].nums)]++;if((i-start)%35===0){setUI('ANALISI V5 IN CORSO…',`${w.name} · ${i-start+1}/${testN}`,20+Math.round(55*((ci+(i-start)/testN)/CANDIDATES.length)),true);await pause(0)}}
-    results.push({w,dist,score:metric(dist)})
-  }
-  const random=Array(7).fill(0);for(let i=start;i<draws.length;i++){const rng=mulberry32(hashSeed(`${i}-random-v5`));random[hits(sample6(rng),draws[i].nums)]++}
-  results.sort((a,b)=>b.score-a.score);model={version:'V5',createdAt:new Date().toISOString(),weights:results[0].w,testN,champ:results[0].dist,random};saveModel();
-  document.getElementById('lab').innerHTML=`<b>Campione:</b> ${model.weights.name} · test ${testN} concorsi.<br>Campione 2+: ${sumFrom(model.champ,2)} · casuale 2+: ${sumFrom(random,2)}.`;
-}
-function sumFrom(a,k){return a.slice(k).reduce((x,y)=>x+y,0)}
-function createShadows(seed){const rng=mulberry32(seed),arr=[];for(let i=0;i<1000;i++)arr.push(sample6(rng));return arr}
-function evaluatePending(){
-  let changed=false;
-  for(const rec of diary){if(rec.resultDate)continue;const d=draws.find(x=>x.date>rec.generatedDate);if(!d)continue;rec.resultDate=d.date;rec.draw=d.nums;rec.hits=hits(rec.ticket,d.nums);const sh=rec.shadows||[];const dh=sh.map(t=>hits(t,d.nums));rec.shadowDist=Array(7).fill(0);dh.forEach(h=>rec.shadowDist[h]++);const below=dh.filter(h=>h<rec.hits).length,equal=dh.filter(h=>h===rec.hits).length;rec.percentile=Math.round(100*(below+.5*equal)/Math.max(1,dh.length));delete rec.shadows;changed=true}
-  if(changed)saveDiary()
-}
-async function easyUpdate(){if(busy)return;try{setUI('AGGIORNAMENTO ARCHIVIO…','Controllo le nuove estrazioni.',5,true);const fail=await updateArchive();setUI('✅ ARCHIVIO PRONTO',`${draws.length} estrazioni. ${fail.length?'Alcuni anni non letti: '+fail.join(', '):'Ora premi 2️⃣ ANALIZZA TUTTO.'}`,100,false)}catch(e){setUI('❌ ERRORE AGGIORNAMENTO',String(e.message||e),0,false)}}
-async function easyAnalyze(){if(busy)return;try{setUI('ANALISI V5 IN CORSO…','Backtest walk-forward e confronto casuale.',10,true);await pause(30);await analyzeV5();setUI('✅ ANALISI COMPLETATA',`Campione V5: ${model.weights.name}. Ora premi 3️⃣ GENERA 1 €.`,100,false);render()}catch(e){setUI('❌ ANALISI INTERROTTA',String(e.message||e),0,false)}}
-function easyGenerate(){
-  if(busy)return;if(!model?.weights){setUI('⚠️ PRIMA ANALIZZA','Premi 2️⃣ ANALIZZA TUTTO.',0,false);return}
-  const generatedDate=new Date().toISOString().slice(0,10),seed=hashSeed(`${Date.now()}-${draws.length}-v5`),rng=mulberry32(seed),hist=draws.slice(-900),ticket=weightedTicket(hist,model.weights,rng),shadows=createShadows(seed^0x9e3779b9);
-  const rec={id:'g'+Date.now(),generatedDate,ticket,seed,model:model.weights.name,shadows};diary.push(rec);saveDiary();render();
-  document.getElementById('ticketBox').innerHTML=`<div class="status"><b>🎯 LA TUA SESTINA DA 1 €</b><div class="balls">${ticket.map(n=>`<span class="ball">${n}</span>`).join('')}</div><div class="muted small" style="margin-top:8px">Salvate anche 1.000 sestine casuali virtuali per il confronto dopo la prossima estrazione.</div></div>`;
-  setUI('✅ GIOCATA GENERATA',ticket.join(' · '),100,false)
-}
-function render(){
-  evaluatePending();document.getElementById('kDraws').textContent=draws.length;
-  const pending=diary.filter(x=>!x.resultDate),done=diary.filter(x=>x.resultDate);document.getElementById('kPending').textContent=pending.length;document.getElementById('kPlayed').textContent=done.length;document.getElementById('kAvg').textContent=done.length?(done.reduce((s,x)=>s+x.hits,0)/done.length).toFixed(2):'—';
-  if(model)document.getElementById('lab').innerHTML=`<b>Campione salvato:</b> ${model.weights.name} · ${model.testN} concorsi di test · creato ${model.createdAt.slice(0,10)}.<br>Campione 2+: ${sumFrom(model.champ,2)} · casuale 2+: ${sumFrom(model.random,2)}.`;
-  renderDiary();renderBenchmark()
-}
-function renderDiary(){
-  const el=document.getElementById('diary');if(!diary.length){el.innerHTML='<div class="status">Nessuna giocata registrata.</div>';return}
-  const rows=[...diary].reverse().map(r=>`<tr><td>${r.generatedDate}</td><td>${r.ticket.join(' ')}</td><td>${r.resultDate||'in attesa'}</td><td>${r.hits??'—'}</td><td>${r.percentile==null?'—':r.percentile+'°'}</td></tr>`).join('');
-  el.innerHTML=`<table><tr><th>Generata</th><th>Sestina</th><th>Estrazione</th><th>Hit</th><th>Percentile vs 1000</th></tr>${rows}</table>`
-}
-function renderBenchmark(){
-  const done=diary.filter(x=>x.resultDate);const el=document.getElementById('benchmark');if(!done.length){el.innerHTML='Nessun risultato verificato: genera una sestina e attendi la prossima estrazione.';return}
-  const dist=Array(7).fill(0);done.forEach(x=>dist[x.hits]++);const avg=done.reduce((s,x)=>s+x.hits,0)/done.length;const avgPct=done.reduce((s,x)=>s+(x.percentile||0),0)/done.length;
-  const verdict=avgPct>=60?'<span class="ok"><b>Per ora sopra la mediana casuale.</b></span>':avgPct<=40?'<span class="warnText"><b>Per ora sotto la mediana casuale.</b></span>':'<b>Per ora vicino alla mediana casuale.</b>';
-  el.innerHTML=`${verdict}<br>Giocate: ${done.length} · media hit: ${avg.toFixed(2)} · percentile medio: ${avgPct.toFixed(0)}°.<br><span class="small muted">0:${dist[0]} · 1:${dist[1]} · 2:${dist[2]} · 3:${dist[3]} · 4:${dist[4]} · 5:${dist[5]} · 6:${dist[6]}. Un campione piccolo non permette conclusioni.</span>`
-}
-function exportDiary(){
-  if(!diary.length)return alert('Diario vuoto');const head='generata,sestina,estrazione,estratti,hit,percentile\n';const body=diary.map(r=>[r.generatedDate,'"'+r.ticket.join(' ')+'"',r.resultDate||'','"'+(r.draw||[]).join(' ')+'"',r.hits??'',r.percentile??''].join(',')).join('\n');const b=new Blob([head+body],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='superenalotto_v5_diario.csv';a.click();URL.revokeObjectURL(a.href)
-}
-function resetDiary(){if(confirm('Cancellare solo il diario V5?')){diary=[];localStorage.removeItem(V5_DIARY);render()}}
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
-load();
-</script>
-</body>
-</html>
+const STORE='se_v31_archive',V5_MODEL='se_v5_model',V5_DIARY='se_v5_diary';let draws=[],model=null,diary=[],busy=false;
+function setUI(main,sub='',pct=0,isBusy=false){document.getElementById('mainStatus').innerHTML=(isBusy?'<span class="spinner"></span>':'')+main;document.getElementById('mainSub').textContent=sub;document.getElementById('mainBar').style.width=Math.max(0,Math.min(100,pct))+'%';busy=isBusy;['bUpdate','bAnalyze','bGenerate'].forEach(id=>document.getElementById(id).disabled=isBusy)}function pause(ms=20){return new Promise(r=>setTimeout(r,ms))}function dedupeDraws(a){const m=new Map();for(const d of a){if(d?.date&&Array.isArray(d.nums)&&d.nums.length===6)m.set(d.date,d)}return[...m.values()].sort((a,b)=>a.date.localeCompare(b.date))}function load(){try{draws=JSON.parse(localStorage.getItem(STORE)||'[]')}catch{draws=[]}try{model=JSON.parse(localStorage.getItem(V5_MODEL)||'null')}catch{model=null}try{diary=JSON.parse(localStorage.getItem(V5_DIARY)||'[]')}catch{diary=[]}draws=dedupeDraws(draws);evaluatePending();render()}function saveDraws(){localStorage.setItem(STORE,JSON.stringify(draws))}function saveDiary(){localStorage.setItem(V5_DIARY,JSON.stringify(diary))}function saveModel(){localStorage.setItem(V5_MODEL,JSON.stringify(model))}
+const months={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};function italianDateToISO(s,year){s=s.toLowerCase().replace(/[^a-zàèéìòù0-9 ]/g,' ').replace(/\s+/g,' ').trim();const m=s.match(/(\d{1,2})\s+([a-zàèéìòù]+)(?:\s+(\d{4}))?/);if(!m||!months[m[2]])return'';return`${m[3]||year}-${String(months[m[2]]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`}
+function parseComArchive(txt,year){const raw=txt.split('\n').map(x=>x.replace(/^#+\s*/,'').trim()).filter(Boolean),out=[],dateRe=/(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+(\d{4})/i;for(let i=0;i<raw.length;i++){const dm=raw[i].match(dateRe);if(!dm||+dm[3]!==year)continue;const date=italianDateToISO(dm[0],year);let nums=[],contest=0;for(let j=i+1;j<Math.min(i+35,raw.length);j++){if(j>i+1&&dateRe.test(raw[j]))break;const cm=raw[j].match(/Concorso\s*(?:n\.?|Nº)?\s*(\d{1,3})/i);if(cm)contest=+cm[1];if(/^\d{1,2}$/.test(raw[j])&&nums.length<6){const v=+raw[j];if(v>=1&&v<=90&&!nums.includes(v))nums.push(v)}}if(nums.length===6)out.push({year,contest,date,nums:nums.sort((a,b)=>a-b)})}return dedupeDraws(out)}
+function parseNetArchive(txt,year){const lines=txt.split('\n').map(x=>x.trim()).filter(Boolean),out=[];for(let i=0;i<lines.length;i++){const m=lines[i].match(/^(\d{1,3})\/(\d{2})\s*\|\s*(.+?)\s*\|?$/);if(!m)continue;let date=italianDateToISO(m[3],year),nums=[];for(let j=i+1;j<Math.min(i+28,lines.length);j++){if(/^\d{1,3}\/\d{2}\s*\|/.test(lines[j]))break;const hs=[...lines[j].matchAll(/(?:^|\s)(\d{1,2})(?=\s|$)/g)].map(z=>+z[1]).filter(v=>v>=1&&v<=90);for(const v of hs)if(nums.length<6&&!nums.includes(v))nums.push(v)}if(nums.length===6&&date)out.push({year,contest:+m[1],date,nums:nums.sort((a,b)=>a-b)})}return dedupeDraws(out)}
+async function getText(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return r.text()}async function fetchYear(y){const sources=[{u:`https://r.jina.ai/https://www.superenalotto.com/archivio/estrazioni-${y}`,p:parseComArchive},{u:`https://r.jina.ai/https://www.superenalotto.net/estrazioni/${y}`,p:parseNetArchive}];let err=[];for(const s of sources){try{const t=await getText(s.u),a=s.p(t,y);if(a.length>=8)return a;err.push('pochi dati '+a.length)}catch(e){err.push(e.message)}}throw Error(err.join(' / '))}function coverage(){const nowY=new Date().getFullYear(),by={};for(const d of draws)(by[d.year]??=[]).push(d);let missing=[];for(let y=1997;y<=nowY;y++)if(!by[y]||by[y].length<8)missing.push(y);return{by,missing}}
+async function updateArchive(){const nowY=new Date().getFullYear(),cov=coverage(),merged=new Map(draws.map(d=>[d.date,d]));let targets=[];for(let y=1997;y<=nowY;y++)if(!cov.by[y]||cov.by[y].length<8||y===nowY)targets.push(y);if(!targets.length)targets=[nowY];let fail=[];for(let i=0;i<targets.length;i++){const y=targets[i];setUI('AGGIORNAMENTO ARCHIVIO…',`Anno ${y} · ${i+1}/${targets.length}`,5+Math.round(70*i/targets.length),true);try{(await fetchYear(y)).forEach(d=>merged.set(d.date,d))}catch(e){fail.push(y)}await pause(25)}draws=dedupeDraws([...merged.values()]);saveDraws();evaluatePending();render();return fail}
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}function hashSeed(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}function sample6(rng){const a=Array.from({length:90},(_,i)=>i+1);for(let i=0;i<6;i++){const j=i+Math.floor(rng()*(90-i));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,6).sort((a,b)=>a-b)}function hits(a,b){return a.filter(x=>b.includes(x)).length}
+function buildStats(hist){const N=hist.length,c=Array(91).fill(0),last=Array(91).fill(-1),pairs=Array.from({length:91},()=>Array(91).fill(0));hist.forEach((d,i)=>{for(const n of d.nums){c[n]++;last[n]=i}for(let x=0;x<6;x++)for(let y=x+1;y<6;y++){let a=d.nums[x],b=d.nums[y];pairs[a][b]++;pairs[b][a]++}});return{N,c,last,pairs}}
+const CANDIDATES=[{name:'Bilanciata',freq:.45,delay:.15,pair:.25,anti:.15},{name:'Frequenza soft',freq:.60,delay:.05,pair:.20,anti:.15},{name:'Coppie soft',freq:.30,delay:.10,pair:.45,anti:.15},{name:'Anti-folla',freq:.25,delay:.10,pair:.15,anti:.50},{name:'Neutra',freq:.25,delay:.25,pair:.25,anti:.25}];function scoreNum(n,st,sel,w){const exp=Math.max(1,st.N*6/90),freq=st.c[n]/exp,delay=st.last[n]<0?1:Math.min(2,(st.N-1-st.last[n])/15);let pair=1;if(sel.length){pair=1+sel.reduce((s,m)=>s+st.pairs[n][m],0)/sel.length/8}const anti=n<=31?.55:1.15;return Math.max(.03,w.freq*freq+w.delay*delay+w.pair*pair+w.anti*anti)}function weightedTicket(hist,w,rng){const st=buildStats(hist),sel=[];while(sel.length<6){let pool=[],total=0;for(let n=1;n<=90;n++){if(sel.includes(n))continue;const sc=scoreNum(n,st,sel,w);pool.push([n,sc]);total+=sc}let r=rng()*total,pick=pool.at(-1)[0];for(const[n,sc]of pool){r-=sc;if(r<=0){pick=n;break}}sel.push(pick)}return sel.sort((a,b)=>a-b)}function metric(d){return d[2]+d[3]*8+d[4]*80+d[5]*1200+d[6]*20000}function sumFrom(a,k){return a.slice(k).reduce((x,y)=>x+y,0)}
+async function analyzeV5(){if(draws.length<900)throw Error(`Archivio insufficiente: ${draws.length} estrazioni`);const testN=Math.min(320,Math.max(140,Math.floor(draws.length*.10))),start=draws.length-testN,results=[];for(let ci=0;ci<CANDIDATES.length;ci++){const w=CANDIDATES[ci],dist=Array(7).fill(0);for(let i=start;i<draws.length;i++){const hist=draws.slice(Math.max(0,i-800),i),rng=mulberry32(hashSeed(`${i}-${ci}-v5`)),t=weightedTicket(hist,w,rng);dist[hits(t,draws[i].nums)]++;if((i-start)%35===0){setUI('ANALISI V5.1 IN CORSO…',`${w.name} · ${i-start+1}/${testN}`,20+Math.round(55*((ci+(i-start)/testN)/CANDIDATES.length)),true);await pause(0)}}results.push({w,dist,score:metric(dist)})}const random=Array(7).fill(0);for(let i=start;i<draws.length;i++){const rng=mulberry32(hashSeed(`${i}-random-v5`));random[hits(sample6(rng),draws[i].nums)]++}results.sort((a,b)=>b.score-a.score);model={version:'V5.1',createdAt:new Date().toISOString(),weights:results[0].w,testN,champ:results[0].dist,random};saveModel()}
+function createShadows(seed){const rng=mulberry32(seed),arr=[];for(let i=0;i<1000;i++)arr.push(sample6(rng));return arr}function evaluatePending(){let changed=false;for(const rec of diary){if(rec.resultDate)continue;const d=draws.find(x=>x.date>rec.generatedDate);if(!d)continue;rec.resultDate=d.date;rec.draw=d.nums;rec.hits=hits(rec.ticket,d.nums);const sh=rec.shadows||[];if(sh.length){const dh=sh.map(t=>hits(t,d.nums));rec.shadowDist=Array(7).fill(0);dh.forEach(h=>rec.shadowDist[h]++);const below=dh.filter(h=>h<rec.hits).length,equal=dh.filter(h=>h===rec.hits).length;rec.percentile=Math.round(100*(below+.5*equal)/dh.length);delete rec.shadows}changed=true}if(changed)saveDiary()}
+async function easyUpdate(){if(busy)return;try{const fail=await updateArchive();setUI('✅ ARCHIVIO PRONTO',`${draws.length} estrazioni. ${fail.length?'Alcuni anni non letti: '+fail.join(', '):'Confronti aggiornati.'}`,100,false)}catch(e){setUI('❌ ERRORE AGGIORNAMENTO',e.message,0,false)}}async function easyAnalyze(){if(busy)return;try{setUI('ANALISI V5.1 IN CORSO…','Backtest walk-forward.',10,true);await analyzeV5();setUI('✅ ANALISI COMPLETATA',`Campione: ${model.weights.name}. Ora GENERA.`,100,false);render()}catch(e){setUI('❌ ANALISI INTERROTTA',e.message,0,false)}}function easyGenerate(){if(busy)return;if(!model?.weights){setUI('⚠️ PRIMA ANALIZZA','Premi 2️⃣ ANALIZZA TUTTO.',0,false);return}const generatedDate=new Date().toISOString().slice(0,10),seed=hashSeed(`${Date.now()}-${draws.length}-v51`),rng=mulberry32(seed),ticket=weightedTicket(draws.slice(-900),model.weights,rng),shadows=createShadows(seed^0x9e3779b9);diary.push({id:'g'+Date.now(),generatedDate,ticket,seed,model:model.weights.name,shadows});saveDiary();render();document.getElementById('ticketBox').innerHTML=`<div class="status"><b>🎯 LA TUA SESTINA DA 1 €</b><div class="balls">${ticket.map(n=>`<span class="ball">${n}</span>`).join('')}</div><div class="muted small">1.000 sestine casuali salvate per il confronto.</div></div>`;setUI('✅ GIOCATA GENERATA',ticket.join(' · '),100,false)}
+function renderCompare(){const el=document.getElementById('lastCompare'),r=[...diary].reverse().find(x=>x.resultDate&&x.shadowDist);if(!r){el.innerHTML='Nessun confronto completo. Le nuove giocate V5.1 conserveranno il campione casuale fino alla verifica.';return}const cells=r.shadowDist.map((n,i)=>`<div class="compareCell"><b>${n}</b><span>${i} numeri</span></div>`).join('');let v=r.percentile>=60?'<span class="ok"><b>SOPRA il campione casuale</b></span>':r.percentile<=40?'<span class="warnText"><b>SOTTO il campione casuale</b></span>':'<b>NELLA MEDIA casuale</b>';el.innerHTML=`<b>Estrazione ${r.resultDate}</b><br>Estratti: ${r.draw.join(' · ')}<br>Nostra V5.1: <b>${r.ticket.join(' · ')}</b> → <b>${r.hits}/6</b><div class="compareGrid">${cells}</div><div style="margin-top:10px">Percentile: <b>${r.percentile}°</b> · ${v}</div><div class="small muted">Le caselle mostrano quante delle 1.000 sestine virtuali hanno ottenuto ciascun numero di centri.</div>`}
+function render(){evaluatePending();document.getElementById('kDraws').textContent=draws.length;const pending=diary.filter(x=>!x.resultDate),done=diary.filter(x=>x.resultDate);document.getElementById('kPending').textContent=pending.length;document.getElementById('kPlayed').textContent=done.length;document.getElementById('kAvg').textContent=done.length?(done.reduce((s,x)=>s+(x.hits||0),0)/done.length).toFixed(2):'—';if(model)document.getElementById('lab').innerHTML=`<b>Campione salvato:</b> ${model.weights.name} · ${model.testN} concorsi.<br>Campione 2+: ${sumFrom(model.champ,2)} · casuale 2+: ${sumFrom(model.random,2)}.`;renderDiary();renderBenchmark();renderCompare()}
+function renderDiary(){const el=document.getElementById('diary');if(!diary.length){el.innerHTML='<div class="status">Nessuna giocata registrata.</div>';return}el.innerHTML=`<table><tr><th>Generata</th><th>Sestina</th><th>Estrazione</th><th>Hit</th><th>vs 1000</th></tr>${[...diary].reverse().map(r=>`<tr><td>${r.generatedDate}</td><td>${r.ticket.join(' ')}</td><td>${r.resultDate||'in attesa'}</td><td>${r.hits??'—'}</td><td>${r.percentile==null?'—':r.percentile+'°'}</td></tr>`).join('')}</table>`}
+function renderBenchmark(){const done=diary.filter(x=>x.resultDate&&x.percentile!=null),el=document.getElementById('benchmark');if(!done.length){el.innerHTML='Nessun risultato verificato con confronto casuale.';return}const dist=Array(7).fill(0);done.forEach(x=>dist[x.hits]++);const avg=done.reduce((s,x)=>s+x.hits,0)/done.length,avgPct=done.reduce((s,x)=>s+x.percentile,0)/done.length;const verdict=avgPct>=60?'<span class="ok"><b>Per ora sopra la mediana casuale.</b></span>':avgPct<=40?'<span class="warnText"><b>Per ora sotto la mediana casuale.</b></span>':'<b>Per ora vicino alla mediana casuale.</b>';el.innerHTML=`${verdict}<br>Giocate confrontabili: ${done.length} · media hit: ${avg.toFixed(2)} · percentile medio: ${avgPct.toFixed(0)}°.<br><span class="small muted">Serve un campione lungo prima di trarre conclusioni.</span>`}
+function exportDiary(){if(!diary.length)return alert('Diario vuoto');const head='generata,sestina,estrazione,estratti,hit,percentile\n',body=diary.map(r=>[r.generatedDate,'"'+r.ticket.join(' ')+'"',r.resultDate||'','"'+(r.draw||[]).join(' ')+'"',r.hits??'',r.percentile??''].join(',')).join('\n'),b=new Blob([head+body],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='superenalotto_v51_diario.csv';a.click();URL.revokeObjectURL(a.href)}function resetDiary(){if(confirm('Cancellare solo il diario V5?')){diary=[];localStorage.removeItem(V5_DIARY);render()}}if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));load();
+</script></body></html>

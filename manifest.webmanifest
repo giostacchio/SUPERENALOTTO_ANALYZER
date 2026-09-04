@@ -1,13 +1,14 @@
 {
-  "name": "SuperEnalotto Analyzer",
-  "short_name": "SuperEnalotto",
+  "name": "SuperEnalotto Analyzer V5.3",
+  "short_name": "SE Analyzer",
+  "description": "Esperimento personale: una proposta per concorso, confronto con 1.000 casuali, budget e ROI reale",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#09111f",
-  "theme_color": "#09111f",
+  "background_color": "#070c17",
+  "theme_color": "#0b1020",
   "icons": [
     {
       "src": "icon-192.png",

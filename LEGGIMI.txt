@@ -1,11 +1,18 @@
-SuperEnalotto Analyzer — pacchetto PWA pronto per GitHub Pages / Netlify
+SuperEnalotto Analyzer V5.3 — PWA per GitHub Pages
 
-Pubblica TUTTI i file e le cartelle mantenendo questa struttura:
-- index.html
-- manifest.webmanifest
-- service-worker.js
-- icons/
+Indirizzo:
+https://giostacchio.github.io/SUPERENALOTTO_ANALYZER/
 
-IMPORTANTE: non aprire index.html come file locale. La PWA va aperta da un indirizzo HTTPS (GitHub Pages o Netlify).
-Dopo la pubblicazione, su Chrome Android apri il sito e usa il menu ⋮ > Installa app / Aggiungi a schermata Home.
-Se avevi una vecchia scorciatoia, rimuovila prima e poi riapri il sito aggiornato.
+Novità V5.3:
+- una sola proposta per concorso;
+- validazione e periodo finale separati;
+- confronto con 1.000 sestine casuali virtuali;
+- distinzione tra “giocata 1 €” e “solo test”;
+- budget mensile, spesa, incassi, profitto e ROI reali;
+- diario esportabile in CSV;
+- icone e aggiornamento offline inclusi nella PWA.
+
+Su Chrome Android apri l’indirizzo HTTPS e usa “Installa” oppure
+menu ⋮ > Installa app / Aggiungi a schermata Home.
+Se compare ancora una vecchia versione, chiudila e riaprila oppure
+rimuovi la vecchia scorciatoia e installala nuovamente dallo stesso URL.

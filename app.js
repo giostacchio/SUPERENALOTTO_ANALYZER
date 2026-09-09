@@ -1,12 +1,16 @@
 'use strict';
 
 const STORE = 'se_v31_archive';
-const V5_MODEL = 'se_v5_model';
-const V5_DIARY = 'se_v5_diary';
+const MODEL_STORE = 'se_v6_model';
+const LEGACY_MODEL_STORE = 'se_v5_model';
+const DIARY_STORE = 'se_v5_diary';
 const BUDGET_STORE = 'se_v53_budget';
-const MODEL_VERSION = 'V5.3';
+const MODEL_VERSION = 'V6.0';
 const DEFAULT_BUDGET = 4;
 const TICKET_COST = 1;
+const PORTFOLIO_SIZE = 4;
+const POOL_SIZE = 18;
+const SHADOW_PORTFOLIOS = 1000;
 
 let draws = [];
 let model = null;
@@ -30,11 +34,11 @@ const months = {
 };
 
 const CANDIDATES = [
-  { name: 'Bilanciata', freq: 0.45, delay: 0.15, pair: 0.25, anti: 0.15 },
-  { name: 'Frequenza soft', freq: 0.60, delay: 0.05, pair: 0.20, anti: 0.15 },
-  { name: 'Coppie soft', freq: 0.30, delay: 0.10, pair: 0.45, anti: 0.15 },
-  { name: 'Anti-folla', freq: 0.25, delay: 0.10, pair: 0.15, anti: 0.50 },
-  { name: 'Neutra', freq: 0.25, delay: 0.25, pair: 0.25, anti: 0.25 }
+  { name: 'Quasi neutra', freq: 0.18, delay: 0.03, anti: 0.03 },
+  { name: 'Bilanciata soft', freq: 0.30, delay: 0.08, anti: 0.04 },
+  { name: 'Frequenza soft', freq: 0.46, delay: 0.02, anti: 0.04 },
+  { name: 'Ritardo soft', freq: 0.18, delay: 0.24, anti: 0.03 },
+  { name: 'Anti-folla soft', freq: 0.22, delay: 0.05, anti: 0.20 }
 ];
 
 function byId(id) {
@@ -65,11 +69,15 @@ function localDate(date) {
   return year + '-' + month + '-' + day;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function setUI(main, sub, pct, isBusy) {
   const message = isBusy ? '<span class="spinner" aria-hidden="true"></span>' + main : main;
   byId('mainStatus').innerHTML = message;
   byId('mainSub').textContent = sub || '';
-  byId('mainBar').style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
+  byId('mainBar').style.width = clamp(pct || 0, 0, 100) + '%';
   busy = Boolean(isBusy);
   ['bUpdate', 'bAnalyze', 'bGenerate'].forEach(function (id) {
     byId(id).disabled = busy;
@@ -80,6 +88,31 @@ function pause(ms) {
   return new Promise(function (resolve) {
     setTimeout(resolve, ms == null ? 20 : ms);
   });
+}
+
+function safeParse(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw == null ? fallback : JSON.parse(raw);
+  } catch (_error) {
+    return fallback;
+  }
+}
+
+function saveDraws() {
+  localStorage.setItem(STORE, JSON.stringify(draws));
+}
+
+function saveDiary() {
+  localStorage.setItem(DIARY_STORE, JSON.stringify(diary));
+}
+
+function saveModel() {
+  localStorage.setItem(MODEL_STORE, JSON.stringify(model));
+}
+
+function saveBudget() {
+  localStorage.setItem(BUDGET_STORE, JSON.stringify(monthlyBudget));
 }
 
 function dedupeDraws(items) {
@@ -102,69 +135,104 @@ function dedupeDraws(items) {
   });
 }
 
-function safeParse(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw == null ? fallback : JSON.parse(raw);
-  } catch (_error) {
-    return fallback;
+function normalizeTickets(record) {
+  if (Array.isArray(record.tickets) && record.tickets.length) {
+    return record.tickets
+      .filter(Array.isArray)
+      .map(function (ticket) {
+        return ticket.map(Number).filter(function (n) { return n >= 1 && n <= 90; }).slice(0, 6).sort(function (a, b) { return a - b; });
+      })
+      .filter(function (ticket) { return ticket.length === 6 && new Set(ticket).size === 6; });
   }
+  if (Array.isArray(record.ticket) && record.ticket.length === 6) {
+    return [record.ticket.map(Number).sort(function (a, b) { return a - b; })];
+  }
+  return [];
 }
 
-function saveDraws() {
-  localStorage.setItem(STORE, JSON.stringify(draws));
-}
-
-function saveDiary() {
-  localStorage.setItem(V5_DIARY, JSON.stringify(diary));
-}
-
-function saveModel() {
-  localStorage.setItem(V5_MODEL, JSON.stringify(model));
-}
-
-function saveBudget() {
-  localStorage.setItem(BUDGET_STORE, JSON.stringify(monthlyBudget));
+function migrateDiary() {
+  let changed = false;
+  diary.forEach(function (record) {
+    const tickets = normalizeTickets(record);
+    if (!Array.isArray(record.tickets) || record.tickets.length !== tickets.length) {
+      record.tickets = tickets;
+      changed = true;
+    }
+    if (!record.ticket && tickets[0]) {
+      record.ticket = tickets[0];
+      changed = true;
+    }
+    if (!Number.isFinite(Number(record.portfolioSize)) || Number(record.portfolioSize) < 1) {
+      record.portfolioSize = Math.max(1, tickets.length);
+      changed = true;
+    }
+    if (!Object.prototype.hasOwnProperty.call(record, 'played')) {
+      record.played = null;
+      changed = true;
+    }
+    if (!Number.isFinite(Number(record.playedLines))) {
+      record.playedLines = record.played === true ? Math.max(1, Math.round(Number(record.cost) || 1)) : 0;
+      changed = true;
+    }
+    if (record.played === true) {
+      const legalLines = clamp(Math.round(Number(record.playedLines) || 1), 1, Math.max(1, tickets.length));
+      if (record.playedLines !== legalLines) {
+        record.playedLines = legalLines;
+        changed = true;
+      }
+      const expectedCost = legalLines * TICKET_COST;
+      if (Number(record.cost) !== expectedCost) {
+        record.cost = expectedCost;
+        changed = true;
+      }
+    } else {
+      if (Number(record.playedLines) !== 0) {
+        record.playedLines = 0;
+        changed = true;
+      }
+      if (Number(record.cost) !== 0) {
+        record.cost = 0;
+        changed = true;
+      }
+    }
+    if (record.resultDate && !Array.isArray(record.lineHits) && tickets.length) {
+      const lineHits = tickets.map(function (ticket) { return hits(ticket, record.draw || []); });
+      record.lineHits = lineHits;
+      record.bestHits = lineHits.length ? Math.max.apply(null, lineHits) : Number(record.hits) || 0;
+      record.totalHits = lineHits.reduce(function (sum, value) { return sum + value; }, 0);
+      record.hits = record.bestHits;
+      changed = true;
+    }
+    if (record.resultDate && record.played === true) {
+      refreshPlayedOutcome(record);
+      if (playedPrizeThreshold(record) < 2 && record.returnAmount == null) {
+        record.returnAmount = 0;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveDiary();
 }
 
 function load() {
   draws = dedupeDraws(safeParse(STORE, []));
-  model = safeParse(V5_MODEL, null);
-  diary = safeParse(V5_DIARY, []);
+  model = safeParse(MODEL_STORE, null);
+  if (!model) {
+    const legacyModel = safeParse(LEGACY_MODEL_STORE, null);
+    if (legacyModel && legacyModel.version === MODEL_VERSION) model = legacyModel;
+  }
+  diary = safeParse(DIARY_STORE, []);
   if (!Array.isArray(diary)) diary = [];
 
   const storedBudget = Number(safeParse(BUDGET_STORE, DEFAULT_BUDGET));
   monthlyBudget = Number.isFinite(storedBudget)
-    ? Math.min(100, Math.max(1, Math.round(storedBudget)))
+    ? clamp(Math.round(storedBudget), 1, 100)
     : DEFAULT_BUDGET;
   byId('monthlyBudget').value = monthlyBudget;
 
   migrateDiary();
   evaluatePending();
   render();
-}
-
-function migrateDiary() {
-  let changed = false;
-  diary.forEach(function (record) {
-    if (!Object.prototype.hasOwnProperty.call(record, 'played')) {
-      record.played = null;
-      changed = true;
-    }
-    if (record.played === true && !Number.isFinite(Number(record.cost))) {
-      record.cost = TICKET_COST;
-      changed = true;
-    }
-    if (record.played !== true && Number(record.cost) !== 0) {
-      record.cost = 0;
-      changed = true;
-    }
-    if (record.resultDate && Number(record.hits) < 2 && record.played === true && record.returnAmount == null) {
-      record.returnAmount = 0;
-      changed = true;
-    }
-  });
-  if (changed) saveDiary();
 }
 
 function italianDateToISO(value, year) {
@@ -276,7 +344,7 @@ async function fetchYear(year) {
   throw new Error(errors.join(' / '));
 }
 
-function coverage() {
+function archiveCoverage() {
   const currentYear = new Date().getFullYear();
   const byYear = {};
   draws.forEach(function (draw) {
@@ -292,7 +360,7 @@ function coverage() {
 
 async function updateArchive() {
   const currentYear = new Date().getFullYear();
-  const currentCoverage = coverage();
+  const currentCoverage = archiveCoverage();
   const merged = new Map(draws.map(function (draw) { return [draw.date, draw]; }));
   const targets = [];
 
@@ -318,7 +386,7 @@ async function updateArchive() {
     } catch (_error) {
       failed.push(year);
     }
-    await pause(25);
+    await pause(20);
   }
 
   draws = dedupeDraws(Array.from(merged.values()));
@@ -339,8 +407,9 @@ function mulberry32(seed) {
 
 function hashSeed(value) {
   let hash = 2166136261;
-  for (let i = 0; i < value.length; i += 1) {
-    hash ^= value.charCodeAt(i);
+  const text = String(value);
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
@@ -358,57 +427,53 @@ function sample6(rng) {
 }
 
 function hits(ticket, extracted) {
+  if (!Array.isArray(ticket) || !Array.isArray(extracted)) return 0;
   return ticket.filter(function (n) { return extracted.includes(n); }).length;
 }
 
 function buildStats(history) {
   const count = Array(91).fill(0);
   const last = Array(91).fill(-1);
-  const pairs = Array.from({ length: 91 }, function () { return Array(91).fill(0); });
-
   history.forEach(function (draw, index) {
     draw.nums.forEach(function (n) {
       count[n] += 1;
       last[n] = index;
     });
-    for (let x = 0; x < 6; x += 1) {
-      for (let y = x + 1; y < 6; y += 1) {
-        const a = draw.nums[x];
-        const b = draw.nums[y];
-        pairs[a][b] += 1;
-        pairs[b][a] += 1;
-      }
-    }
   });
-  return { total: history.length, count: count, last: last, pairs: pairs };
+  return { total: history.length, count: count, last: last };
 }
 
-function scoreNumber(n, stats, selected, weights) {
+function numberScore(n, stats, weights) {
   const expected = Math.max(1, stats.total * 6 / 90);
-  const frequency = stats.count[n] / expected;
-  const delay = stats.last[n] < 0 ? 1 : Math.min(2, (stats.total - 1 - stats.last[n]) / 15);
-  let pair = 1;
-  if (selected.length) {
-    pair = 1 + selected.reduce(function (sum, selectedNumber) {
-      return sum + stats.pairs[n][selectedNumber];
-    }, 0) / selected.length / 8;
-  }
-  const antiCrowd = n <= 31 ? 0.55 : 1.15;
-  return Math.max(
-    0.03,
-    weights.freq * frequency + weights.delay * delay + weights.pair * pair + weights.anti * antiCrowd
+  const freqRatio = stats.count[n] / expected;
+  const freqSignal = clamp(freqRatio - 1, -0.35, 0.35);
+  const gap = stats.last[n] < 0 ? 14 : Math.max(0, stats.total - 1 - stats.last[n]);
+  const delaySignal = clamp((gap - 14) / 42, -0.35, 0.35);
+  const antiSignal = n <= 31 ? -0.06 : 0.025;
+  return Math.max(0.25,
+    1 +
+    weights.freq * freqSignal +
+    weights.delay * delaySignal +
+    weights.anti * antiSignal
   );
 }
 
-function weightedTicket(history, weights, rng) {
-  const stats = buildStats(history);
+function baseScores(stats, weights) {
+  const scores = Array(91).fill(0);
+  for (let n = 1; n <= 90; n += 1) scores[n] = numberScore(n, stats, weights);
+  return scores;
+}
+
+function sampleWeighted6(scores, usage, rng) {
   const selected = [];
   while (selected.length < 6) {
-    const pool = [];
     let total = 0;
+    const pool = [];
     for (let n = 1; n <= 90; n += 1) {
       if (selected.includes(n)) continue;
-      const score = scoreNumber(n, stats, selected, weights);
+      const used = usage ? Number(usage[n] || 0) : 0;
+      const diversityPenalty = used === 0 ? 1 : used === 1 ? 0.12 : 0.025;
+      const score = Math.max(0.001, scores[n] * diversityPenalty);
       pool.push([n, score]);
       total += score;
     }
@@ -426,164 +491,208 @@ function weightedTicket(history, weights, rng) {
   return selected.sort(function (a, b) { return a - b; });
 }
 
-function metric(distribution) {
-  return distribution[2] + distribution[3] * 8 + distribution[4] * 80 + distribution[5] * 1200 + distribution[6] * 20000;
-}
+function generatePortfolio(history, weights, count, rng) {
+  const stats = buildStats(history);
+  const scores = baseScores(stats, weights);
+  const usage = Array(91).fill(0);
+  const tickets = [];
 
-function sumFrom(distribution, start) {
-  return distribution.slice(start).reduce(function (sum, value) { return sum + value; }, 0);
-}
-
-function evaluateWindow(start, end, weights, seedLabel) {
-  const distribution = Array(7).fill(0);
-  for (let index = start; index < end; index += 1) {
-    const history = draws.slice(Math.max(0, index - 800), index);
-    const rng = mulberry32(hashSeed(index + '-' + seedLabel));
-    const ticket = weights ? weightedTicket(history, weights, rng) : sample6(rng);
-    distribution[hits(ticket, draws[index].nums)] += 1;
+  for (let line = 0; line < count; line += 1) {
+    const ticket = sampleWeighted6(scores, usage, rng);
+    ticket.forEach(function (n) { usage[n] += 1; });
+    tickets.push(ticket);
   }
-  return distribution;
+  return tickets;
 }
 
-async function analyzeV53() {
+function randomPortfolio(count, rng) {
+  const tickets = [];
+  for (let i = 0; i < count; i += 1) tickets.push(sample6(rng));
+  return tickets;
+}
+
+function ticketPairs(ticket) {
+  const keys = [];
+  for (let i = 0; i < ticket.length; i += 1) {
+    for (let j = i + 1; j < ticket.length; j += 1) {
+      keys.push(ticket[i] + '-' + ticket[j]);
+    }
+  }
+  return keys;
+}
+
+function portfolioCoverage(tickets) {
+  const allNumbers = new Set();
+  const allPairs = new Set();
+  let maxOverlap = 0;
+
+  tickets.forEach(function (ticket, index) {
+    ticket.forEach(function (n) { allNumbers.add(n); });
+    ticketPairs(ticket).forEach(function (pair) { allPairs.add(pair); });
+    for (let j = 0; j < index; j += 1) {
+      const overlap = hits(ticket, tickets[j]);
+      maxOverlap = Math.max(maxOverlap, overlap);
+    }
+  });
+
+  const maxNumbers = Math.max(1, tickets.length * 6);
+  const maxPairs = Math.max(1, tickets.length * 15);
+  const score = Math.round(100 * (0.55 * allNumbers.size / maxNumbers + 0.45 * allPairs.size / maxPairs));
+  return {
+    uniqueNumbers: allNumbers.size,
+    uniquePairs: allPairs.size,
+    maxOverlap: maxOverlap,
+    score: clamp(score, 0, 100)
+  };
+}
+
+function analyticalPool(history, weights, size) {
+  const stats = buildStats(history);
+  const scores = baseScores(stats, weights);
+  return Array.from({ length: 90 }, function (_unused, index) { return index + 1; })
+    .sort(function (a, b) { return scores[b] - scores[a] || a - b; })
+    .slice(0, size);
+}
+
+function portfolioOutcome(tickets, extracted) {
+  const lineHits = tickets.map(function (ticket) { return hits(ticket, extracted); });
+  return {
+    lineHits: lineHits,
+    best: lineHits.length ? Math.max.apply(null, lineHits) : 0,
+    total: lineHits.reduce(function (sum, value) { return sum + value; }, 0),
+    lines2plus: lineHits.filter(function (value) { return value >= 2; }).length
+  };
+}
+
+function emptyStrategySummary() {
+  return {
+    n: 0,
+    bestDist: Array(7).fill(0),
+    any2plus: 0,
+    zeroTotal: 0,
+    totalHits: 0,
+    sumBest: 0
+  };
+}
+
+function addOutcome(summary, outcome) {
+  summary.n += 1;
+  summary.bestDist[outcome.best] += 1;
+  if (outcome.best >= 2) summary.any2plus += 1;
+  if (outcome.total === 0) summary.zeroTotal += 1;
+  summary.totalHits += outcome.total;
+  summary.sumBest += outcome.best;
+}
+
+function strategyScore(summary) {
+  return summary.any2plus * 10000 +
+    (summary.bestDist[3] || 0) * 900 +
+    (summary.bestDist[4] || 0) * 5000 +
+    (summary.bestDist[5] || 0) * 25000 +
+    (summary.bestDist[6] || 0) * 100000 +
+    summary.sumBest * 10 + summary.totalHits;
+}
+
+function evaluateStrategyWindow(start, end, weights, count, seedLabel, isRandom) {
+  const summary = emptyStrategySummary();
+  for (let index = start; index < end; index += 1) {
+    const history = draws.slice(Math.max(0, index - 900), index);
+    const rng = mulberry32(hashSeed(index + '-' + seedLabel + '-' + count));
+    const tickets = isRandom
+      ? randomPortfolio(count, rng)
+      : generatePortfolio(history, weights, count, rng);
+    addOutcome(summary, portfolioOutcome(tickets, draws[index].nums));
+  }
+  return summary;
+}
+
+async function analyzeV6() {
   if (draws.length < 900) {
     throw new Error('Archivio insufficiente: ' + draws.length + ' estrazioni. Aggiornalo prima.');
   }
 
-  const holdoutN = Math.min(180, Math.max(90, Math.floor(draws.length * 0.05)));
-  const validationN = Math.min(320, Math.max(150, Math.floor(draws.length * 0.08)));
+  const holdoutN = Math.min(160, Math.max(100, Math.floor(draws.length * 0.045)));
+  const validationN = Math.min(260, Math.max(170, Math.floor(draws.length * 0.07)));
   const holdoutStart = draws.length - holdoutN;
   const validationStart = holdoutStart - validationN;
   const validationResults = [];
 
   for (let candidateIndex = 0; candidateIndex < CANDIDATES.length; candidateIndex += 1) {
     const weights = CANDIDATES[candidateIndex];
-    const distribution = Array(7).fill(0);
+    const summary = emptyStrategySummary();
 
     for (let index = validationStart; index < holdoutStart; index += 1) {
-      const history = draws.slice(Math.max(0, index - 800), index);
-      const rng = mulberry32(hashSeed(index + '-' + candidateIndex + '-validation-v53'));
-      const ticket = weightedTicket(history, weights, rng);
-      distribution[hits(ticket, draws[index].nums)] += 1;
+      const history = draws.slice(Math.max(0, index - 900), index);
+      const rng = mulberry32(hashSeed(index + '-' + candidateIndex + '-validation-v60'));
+      const tickets = generatePortfolio(history, weights, PORTFOLIO_SIZE, rng);
+      addOutcome(summary, portfolioOutcome(tickets, draws[index].nums));
 
       if ((index - validationStart) % 35 === 0) {
         const partial = candidateIndex + (index - validationStart) / validationN;
         setUI(
-          'ANALISI V5.3 IN CORSO…',
+          'ANALISI V6 IN CORSO…',
           'Validazione · ' + weights.name + ' · ' + (index - validationStart + 1) + '/' + validationN,
-          12 + Math.round(52 * partial / CANDIDATES.length),
+          10 + Math.round(52 * partial / CANDIDATES.length),
           true
         );
         await pause(0);
       }
     }
 
-    validationResults.push({ weights: weights, distribution: distribution, score: metric(distribution) });
+    validationResults.push({ weights: weights, summary: summary, score: strategyScore(summary) });
   }
 
   validationResults.sort(function (a, b) { return b.score - a.score; });
   const winner = validationResults[0];
+  const randomValidation = evaluateStrategyWindow(
+    validationStart,
+    holdoutStart,
+    null,
+    PORTFOLIO_SIZE,
+    'random-validation-v60',
+    true
+  );
+
   setUI(
     'VERIFICA FINALE SEPARATA…',
     'Il periodo finale non è stato usato per scegliere “' + winner.weights.name + '”.',
-    72,
+    70,
     true
   );
   await pause(20);
 
-  const championHoldout = evaluateWindow(holdoutStart, draws.length, winner.weights, 'champ-holdout-v53');
-  const randomHoldout = evaluateWindow(holdoutStart, draws.length, null, 'random-holdout-v53');
+  const holdout = {};
+  const counts = [1, 2, 4];
+  for (let i = 0; i < counts.length; i += 1) {
+    const count = counts[i];
+    setUI(
+      'BACKTEST HOLDOUT…',
+      'Confronto a ' + count + (count === 1 ? ' linea' : ' linee') + ' · ' + (i + 1) + '/3',
+      74 + Math.round(20 * i / counts.length),
+      true
+    );
+    await pause(0);
+    holdout[String(count)] = {
+      algorithm: evaluateStrategyWindow(holdoutStart, draws.length, winner.weights, count, 'algo-holdout-v60', false),
+      random: evaluateStrategyWindow(holdoutStart, draws.length, null, count, 'random-holdout-v60', true)
+    };
+  }
 
   model = {
     version: MODEL_VERSION,
     createdAt: new Date().toISOString(),
     weights: winner.weights,
     validationN: validationN,
-    validation: winner.distribution,
+    validation: winner.summary,
+    randomValidation: randomValidation,
     holdoutN: holdoutN,
-    championHoldout: championHoldout,
-    randomHoldout: randomHoldout,
+    holdout: holdout,
     validationStart: draws[validationStart].date,
     validationEnd: draws[holdoutStart - 1].date,
     holdoutStart: draws[holdoutStart].date,
     holdoutEnd: draws[draws.length - 1].date
   };
   saveModel();
-}
-
-function createShadows(seed) {
-  const rng = mulberry32(seed);
-  const shadows = [];
-  for (let i = 0; i < 1000; i += 1) shadows.push(sample6(rng));
-  return shadows;
-}
-
-function findResultFor(record) {
-  if (record.afterDrawDate) {
-    return draws.find(function (draw) { return draw.date > record.afterDrawDate; });
-  }
-  const later = draws.find(function (draw) { return draw.date > record.generatedDate; });
-  const same = draws.find(function (draw) { return draw.date === record.generatedDate; });
-  return same || later;
-}
-
-function evaluatePending() {
-  let changed = false;
-  diary.forEach(function (record) {
-    if (record.resultDate) return;
-    const result = findResultFor(record);
-    if (!result) return;
-
-    record.resultDate = result.date;
-    record.resultContest = result.contest || null;
-    record.draw = result.nums;
-    record.hits = hits(record.ticket, result.nums);
-    if (!record.afterDrawDate && result.date === record.generatedDate) record.legacySameDay = true;
-
-    const shadows = Array.isArray(record.shadows) ? record.shadows : [];
-    if (shadows.length) {
-      const shadowHits = shadows.map(function (ticket) { return hits(ticket, result.nums); });
-      record.shadowDist = Array(7).fill(0);
-      shadowHits.forEach(function (value) { record.shadowDist[value] += 1; });
-      const below = shadowHits.filter(function (value) { return value < record.hits; }).length;
-      const equal = shadowHits.filter(function (value) { return value === record.hits; }).length;
-      record.percentile = Math.round(100 * (below + 0.5 * equal) / shadowHits.length);
-      delete record.shadows;
-    }
-
-    if (record.played === true && record.hits < 2 && record.returnAmount == null) {
-      record.returnAmount = 0;
-    }
-    changed = true;
-  });
-  if (changed) saveDiary();
-}
-
-async function easyUpdate() {
-  if (busy) return;
-  try {
-    const failed = await updateArchive();
-    setUI(
-      'ARCHIVIO PRONTO',
-      draws.length + ' estrazioni. ' + (failed.length ? 'Anni non letti: ' + failed.join(', ') : 'Confronti aggiornati.'),
-      100,
-      false
-    );
-  } catch (error) {
-    setUI('ERRORE AGGIORNAMENTO', error.message, 0, false);
-  }
-}
-
-async function easyAnalyze() {
-  if (busy) return;
-  try {
-    setUI('ANALISI V5.3 IN CORSO…', 'Validazione e periodo finale separati.', 6, true);
-    await analyzeV53();
-    setUI('ANALISI COMPLETATA', 'Modello selezionato: ' + model.weights.name + '. Ora puoi generare.', 100, false);
-    render();
-  } catch (error) {
-    setUI('ANALISI INTERROTTA', error.message, 0, false);
-  }
 }
 
 function currentReference() {
@@ -597,12 +706,134 @@ function pendingForReference(reference) {
   }) || null;
 }
 
+function findResultFor(record) {
+  if (record.afterDrawDate) {
+    return draws.find(function (draw) { return draw.date > record.afterDrawDate; });
+  }
+  const later = draws.find(function (draw) { return draw.date > record.generatedDate; });
+  const same = draws.find(function (draw) { return draw.date === record.generatedDate; });
+  return same || later;
+}
+
+function compareScore(outcome) {
+  return outcome.best * 100 + outcome.total;
+}
+
+function createShadowComparison(record, result) {
+  const count = Math.max(1, Number(record.portfolioSize) || normalizeTickets(record).length || 1);
+  const seed = Number(record.shadowSeed) || (Number(record.seed) ^ 0x9e3779b9) || hashSeed(record.id + '-shadow-v60');
+  const rng = mulberry32(seed >>> 0);
+  const actualOutcome = portfolioOutcome(normalizeTickets(record), result.nums);
+  const actualScore = compareScore(actualOutcome);
+  const dist = Array(7).fill(0);
+  let below = 0;
+  let equal = 0;
+
+  for (let i = 0; i < SHADOW_PORTFOLIOS; i += 1) {
+    const randomTickets = randomPortfolio(count, rng);
+    const outcome = portfolioOutcome(randomTickets, result.nums);
+    dist[outcome.best] += 1;
+    const score = compareScore(outcome);
+    if (score < actualScore) below += 1;
+    else if (score === actualScore) equal += 1;
+  }
+
+  record.shadowDist = dist;
+  record.percentile = Math.round(100 * (below + 0.5 * equal) / SHADOW_PORTFOLIOS);
+}
+
+function refreshPlayedOutcome(record) {
+  const lineHits = Array.isArray(record.lineHits) ? record.lineHits : [];
+  if (record.played !== true) {
+    record.playedBestHits = null;
+    record.playedTotalHits = null;
+    return;
+  }
+  const playedLines = clamp(Math.round(Number(record.playedLines) || 1), 1, Math.max(1, lineHits.length || 1));
+  const played = lineHits.slice(0, playedLines);
+  record.playedBestHits = played.length ? Math.max.apply(null, played) : 0;
+  record.playedTotalHits = played.reduce(function (sum, value) { return sum + value; }, 0);
+}
+
+function playedPrizeThreshold(record) {
+  if (record.played !== true) return 0;
+  if (Number.isFinite(Number(record.playedBestHits))) return Number(record.playedBestHits);
+  return Number(record.hits) || 0;
+}
+
+function evaluatePending() {
+  let changed = false;
+  diary.forEach(function (record) {
+    if (record.resultDate) return;
+    const result = findResultFor(record);
+    if (!result) return;
+
+    const tickets = normalizeTickets(record);
+    const outcome = portfolioOutcome(tickets, result.nums);
+    record.resultDate = result.date;
+    record.resultContest = result.contest || null;
+    record.draw = result.nums;
+    record.lineHits = outcome.lineHits;
+    record.bestHits = outcome.best;
+    record.totalHits = outcome.total;
+    record.hits = outcome.best;
+    if (!record.afterDrawDate && result.date === record.generatedDate) record.legacySameDay = true;
+
+    if (Array.isArray(record.shadows) && record.shadows.length) {
+      const shadowHits = record.shadows.map(function (ticket) { return hits(ticket, result.nums); });
+      record.shadowDist = Array(7).fill(0);
+      shadowHits.forEach(function (value) { record.shadowDist[value] += 1; });
+      const below = shadowHits.filter(function (value) { return value < outcome.best; }).length;
+      const equal = shadowHits.filter(function (value) { return value === outcome.best; }).length;
+      record.percentile = Math.round(100 * (below + 0.5 * equal) / shadowHits.length);
+      delete record.shadows;
+    } else {
+      createShadowComparison(record, result);
+    }
+
+    refreshPlayedOutcome(record);
+    if (record.played === true && playedPrizeThreshold(record) < 2 && record.returnAmount == null) {
+      record.returnAmount = 0;
+    }
+    changed = true;
+  });
+  if (changed) saveDiary();
+}
+
+async function easyUpdate() {
+  if (busy) return;
+  try {
+    const failed = await updateArchive();
+    setUI(
+      'ARCHIVIO PRONTO',
+      draws.length + ' estrazioni. ' + (failed.length ? 'Anni non letti: ' + failed.join(', ') : 'Portafogli in attesa verificati.'),
+      100,
+      false
+    );
+  } catch (error) {
+    setUI('ERRORE AGGIORNAMENTO', error.message, 0, false);
+  }
+}
+
+async function easyAnalyze() {
+  if (busy) return;
+  try {
+    setUI('ANALISI V6 IN CORSO…', 'Validazione, copertura e holdout separati.', 6, true);
+    await analyzeV6();
+    setUI('ANALISI COMPLETATA', 'Modello selezionato: ' + model.weights.name + '. Ora puoi generare il portafoglio.', 100, false);
+    render();
+  } catch (error) {
+    setUI('ANALISI INTERROTTA', error.message, 0, false);
+  }
+}
+
 function easyGenerate() {
   if (busy) return;
   if (!model || model.version !== MODEL_VERSION || !model.weights) {
-    setUI('PRIMA ANALIZZA', 'Premi “2 · Analizza tutto” per creare un modello V5.3 verificato.', 0, false);
+    setUI('PRIMA ANALIZZA', 'Premi “2 · Analizza tutto” per creare il modello V6 verificato.', 0, false);
     return;
   }
+
   const lastDraw = currentReference();
   if (!lastDraw) {
     setUI('ARCHIVIO MANCANTE', 'Premi prima “1 · Aggiorna archivio”.', 0, false);
@@ -613,8 +844,8 @@ function easyGenerate() {
   if (existing) {
     renderTicket(existing);
     setUI(
-      'PROPOSTA GIÀ CREATA',
-      'Per evitare selezione opportunistica resta valida una sola proposta dopo il concorso ' + (lastDraw.contest || lastDraw.date) + '.',
+      'PORTAFOGLIO GIÀ CREATO',
+      'Per evitare selezione opportunistica resta valido quello generato dopo il concorso ' + (lastDraw.contest || lastDraw.date) + '.',
       100,
       false
     );
@@ -624,29 +855,43 @@ function easyGenerate() {
   const now = new Date();
   const generatedAt = now.toISOString();
   const generatedDate = localDate(now);
-  const seed = hashSeed(lastDraw.date + '-' + (lastDraw.contest || '') + '-' + generatedAt + '-v53');
+  const seed = hashSeed(lastDraw.date + '-' + (lastDraw.contest || '') + '-' + generatedAt + '-v60');
   const rng = mulberry32(seed);
-  const ticket = weightedTicket(draws.slice(-900), model.weights, rng);
-  const shadows = createShadows(seed ^ 0x9e3779b9);
+  const history = draws.slice(-900);
+  const tickets = generatePortfolio(history, model.weights, PORTFOLIO_SIZE, rng);
+  const pool = analyticalPool(history, model.weights, POOL_SIZE);
+  const cover = portfolioCoverage(tickets);
+
   const record = {
     id: 'g' + Date.now(),
     generatedAt: generatedAt,
     generatedDate: generatedDate,
     afterDrawDate: lastDraw.date,
     afterContest: lastDraw.contest || null,
-    ticket: ticket,
+    ticket: tickets[0],
+    tickets: tickets,
+    portfolioSize: tickets.length,
+    pool: pool,
+    coverage: cover,
     seed: seed,
+    shadowSeed: (seed ^ 0x9e3779b9) >>> 0,
     model: model.weights.name,
-    shadows: shadows,
     played: null,
+    playedLines: 0,
     cost: 0,
     returnAmount: null
   };
+
   diary.push(record);
   saveDiary();
   render();
   renderTicket(record);
-  setUI('PROPOSTA GENERATA', ticket.join(' · ') + ' · non è ancora conteggiata come spesa.', 100, false);
+  setUI(
+    'PORTAFOGLIO GENERATO',
+    cover.uniqueNumbers + ' numeri distinti su 24 posti · sovrapposizione massima ' + cover.maxOverlap + '. Nessuna spesa ancora conteggiata.',
+    100,
+    false
+  );
 }
 
 function ballsHtml(ticket) {
@@ -655,35 +900,18 @@ function ballsHtml(ticket) {
   }).join('');
 }
 
-function playStateText(record) {
-  if (record.played === true) return 'Giocata confermata · ' + formatMoney(record.cost || TICKET_COST);
-  if (record.played === false) return 'Solo test · nessuna spesa';
-  return 'Da confermare · nessuna spesa conteggiata';
+function compactTicketsHtml(tickets) {
+  return tickets.map(function (ticket, index) {
+    return '<div class="portfolio-line"><span class="line-no">' + (index + 1) + '</span><div class="balls compact-balls">' + ballsHtml(ticket) + '</div></div>';
+  }).join('');
 }
 
-function renderTicket(record) {
-  const target = byId('ticketBox');
-  if (!record || !Array.isArray(record.ticket)) {
-    target.innerHTML = '';
-    return;
+function playStateText(record) {
+  if (record.played === true) {
+    return 'Giocato · ' + Number(record.playedLines || 1) + (Number(record.playedLines || 1) === 1 ? ' linea' : ' linee') + ' · ' + formatMoney(record.cost);
   }
-
-  let actions = '';
-  if (!record.resultDate || record.played == null) {
-    actions = '<div class="ticket-actions">' +
-      '<button class="primary" type="button" data-ticket-action="played" data-id="' + escapeHtml(record.id) + '">Conferma: ho giocato 1 €</button>' +
-      '<button class="secondary" type="button" data-ticket-action="test" data-id="' + escapeHtml(record.id) + '">Segna come solo test</button>' +
-      '</div>';
-  }
-
-  target.innerHTML = '<div class="ticket-panel">' +
-    '<h3>Proposta statistica V5.3</h3>' +
-    '<div class="muted small">Creata dopo il concorso ' + escapeHtml(record.afterContest || record.afterDrawDate || 'non disponibile') + '.</div>' +
-    '<div class="balls">' + ballsHtml(record.ticket) + '</div>' +
-    '<span class="play-state">' + escapeHtml(playStateText(record)) + '</span>' +
-    actions +
-    '<p class="muted small">Le 1.000 sestine casuali sono già fissate. La proposta entra nel test anche se scegli di non acquistarla.</p>' +
-    '</div>';
+  if (record.played === false) return 'Solo test · nessuna spesa';
+  return 'Da confermare · nessuna spesa conteggiata';
 }
 
 function spendForMonth(monthKey, excludingId) {
@@ -696,23 +924,82 @@ function spendForMonth(monthKey, excludingId) {
   }, 0);
 }
 
-function setPlayState(recordId, state) {
+function availableBudgetFor(record) {
+  const monthKey = String(record.generatedDate || record.generatedAt || '').slice(0, 7);
+  return Math.max(0, monthlyBudget - spendForMonth(monthKey, record.id));
+}
+
+function renderTicket(record) {
+  const target = byId('ticketBox');
+  const tickets = record ? normalizeTickets(record) : [];
+  if (!record || !tickets.length) {
+    target.innerHTML = '';
+    return;
+  }
+
+  const cover = record.coverage || portfolioCoverage(tickets);
+  let actions = '';
+  if (!record.resultDate && record.played == null) {
+    const available = Math.floor(availableBudgetFor(record));
+    const maxPlayable = Math.min(tickets.length, available);
+    const buttons = [];
+    for (let lines = 1; lines <= maxPlayable; lines += 1) {
+      buttons.push(
+        '<button class="' + (lines === 1 ? 'primary' : '') + '" type="button" data-ticket-action="play" data-lines="' + lines + '" data-id="' + escapeHtml(record.id) + '">' +
+        'Gioca ' + lines + (lines === 1 ? ' linea' : ' linee') + ' · ' + formatMoney(lines * TICKET_COST) +
+        '</button>'
+      );
+    }
+    if (!buttons.length) {
+      buttons.push('<span class="warning-text small">Budget mensile esaurito: il portafoglio può restare solo nel test.</span>');
+    }
+    actions = '<div class="ticket-actions">' + buttons.join('') +
+      '<button class="secondary" type="button" data-ticket-action="test" data-id="' + escapeHtml(record.id) + '">Segna come solo test</button>' +
+      '</div>';
+  }
+
+  const poolText = Array.isArray(record.pool) && record.pool.length
+    ? record.pool.map(Number).join(' · ')
+    : 'non disponibile per le proposte precedenti';
+
+  target.innerHTML = '<div class="ticket-panel">' +
+    '<div class="section-head ticket-head"><div><h3>Portafoglio V6 · 4 linee</h3>' +
+    '<div class="muted small">Creato dopo il concorso ' + escapeHtml(record.afterContest || record.afterDrawDate || 'non disponibile') + ' · modello ' + escapeHtml(record.model || 'precedente') + '.</div></div>' +
+    '<span class="play-state">' + escapeHtml(playStateText(record)) + '</span></div>' +
+    '<div class="portfolio-grid">' + compactTicketsHtml(tickets) + '</div>' +
+    '<div class="coverage-strip"><span><b>' + cover.uniqueNumbers + '</b> numeri distinti</span><span><b>' + cover.uniquePairs + '</b> coppie distinte</span><span><b>' + cover.maxOverlap + '</b> overlap max</span><span><b>' + cover.score + '%</b> copertura interna</span></div>' +
+    actions +
+    '<details class="mini-details"><summary>Pool analitico di ' + (Array.isArray(record.pool) ? record.pool.length : '—') + ' numeri</summary><div class="pool-numbers">' + escapeHtml(poolText) + '</div></details>' +
+    '<p class="muted small ticket-note">Le 4 linee restano nel diario anche se ne giochi soltanto una. Il vantaggio cercato è evitare duplicazioni inutili; non cambia l’equiprobabilità delle sestine.</p>' +
+    '</div>';
+}
+
+function setPlayState(recordId, state, lines) {
   const record = diary.find(function (item) { return item.id === recordId; });
   if (!record) return false;
+  if (record.resultDate) {
+    window.alert('Il risultato è già disponibile: stato e costo sono congelati per evitare modifiche a posteriori.');
+    return false;
+  }
 
   if (state === true) {
+    const tickets = normalizeTickets(record);
+    const chosenLines = clamp(Math.round(Number(lines) || 1), 1, Math.max(1, tickets.length));
+    const cost = chosenLines * TICKET_COST;
     const monthKey = String(record.generatedDate || record.generatedAt || '').slice(0, 7);
     const alreadySpent = spendForMonth(monthKey, record.id);
-    if (alreadySpent + TICKET_COST > monthlyBudget) {
-      window.alert('Budget mensile raggiunto: questa proposta resta fuori dalle giocate monetarie. Puoi lasciarla come test.');
+    if (alreadySpent + cost > monthlyBudget) {
+      window.alert('Budget mensile insufficiente per ' + chosenLines + ' linee. Puoi scegliere meno linee o lasciare il portafoglio come test.');
       render();
       return false;
     }
     record.played = true;
-    record.cost = TICKET_COST;
-    if (record.resultDate && Number(record.hits) < 2) record.returnAmount = 0;
+    record.playedLines = chosenLines;
+    record.cost = cost;
+    record.returnAmount = null;
   } else {
     record.played = false;
+    record.playedLines = 0;
     record.cost = 0;
     record.returnAmount = null;
   }
@@ -722,30 +1009,61 @@ function setPlayState(recordId, state) {
   return true;
 }
 
+function renderCoverage() {
+  const reference = currentReference();
+  let record = pendingForReference(reference);
+  if (!record) record = diary.length ? diary[diary.length - 1] : null;
+
+  if (!record || !normalizeTickets(record).length) {
+    byId('kPoolCount').textContent = '—';
+    byId('kUniqueNumbers').textContent = '—';
+    byId('kMaxOverlap').textContent = '—';
+    byId('kCoverageScore').textContent = '—';
+    byId('coverageDetail').textContent = 'Genera un portafoglio per vedere la copertura effettiva.';
+    return;
+  }
+
+  const tickets = normalizeTickets(record);
+  const cover = record.coverage || portfolioCoverage(tickets);
+  byId('kPoolCount').textContent = Array.isArray(record.pool) ? record.pool.length : '—';
+  byId('kUniqueNumbers').textContent = cover.uniqueNumbers + '/' + (tickets.length * 6);
+  byId('kMaxOverlap').textContent = cover.maxOverlap;
+  byId('kCoverageScore').textContent = cover.score + '%';
+
+  let quality = 'Copertura interna buona: le linee condividono pochi numeri.';
+  if (cover.maxOverlap >= 3) quality = 'Copertura più concentrata: alcune linee condividono almeno 3 numeri.';
+  if (cover.uniqueNumbers === tickets.length * 6) quality = 'Copertura interna massima: nessun numero è duplicato tra le linee.';
+  byId('coverageDetail').innerHTML = '<b>' + escapeHtml(quality) + '</b><br>' +
+    '<span class="small muted">Indice basato su numeri e coppie distinti all’interno del portafoglio; non è una probabilità di vincita.</span>';
+}
+
 function renderCompare() {
   const target = byId('lastCompare');
   const record = diary.slice().reverse().find(function (item) {
     return item.resultDate && Array.isArray(item.shadowDist);
   });
   if (!record) {
-    target.textContent = 'Nessun confronto completo. Le nuove proposte conserveranno il campione casuale fino alla verifica.';
+    target.textContent = 'Nessun confronto completo. Le nuove proposte verranno confrontate con 1.000 portafogli casuali equivalenti.';
     return;
   }
 
   const cells = record.shadowDist.map(function (count, hitCount) {
-    return '<div class="compare-cell"><b>' + count + '</b><span>' + hitCount + ' numeri</span></div>';
+    return '<div class="compare-cell"><b>' + count + '</b><span>best ' + hitCount + '</span></div>';
   }).join('');
 
   let verdict = '<b>nella fascia centrale del campione casuale</b>';
-  if (record.percentile >= 60) verdict = '<b class="positive">sopra il campione casuale</b>';
-  if (record.percentile <= 40) verdict = '<b class="warning-text">sotto il campione casuale</b>';
+  if (Number(record.percentile) >= 60) verdict = '<b class="positive">sopra il campione casuale</b>';
+  if (Number(record.percentile) <= 40) verdict = '<b class="warning-text">sotto il campione casuale</b>';
+
+  const lineHits = Array.isArray(record.lineHits) ? record.lineHits : [Number(record.hits) || 0];
+  const lineResult = lineHits.map(function (value, index) { return 'L' + (index + 1) + ': ' + value + '/6'; }).join(' · ');
 
   target.innerHTML = '<b>Estrazione ' + escapeHtml(record.resultDate) + '</b><br>' +
-    'Estratti: ' + record.draw.map(Number).join(' · ') + '<br>' +
-    'Proposta: <b>' + record.ticket.map(Number).join(' · ') + '</b> → <b>' + Number(record.hits) + '/6</b>' +
+    'Estratti: ' + (record.draw || []).map(Number).join(' · ') + '<br>' +
+    'Portafoglio: <b>best ' + Number(record.bestHits != null ? record.bestHits : record.hits || 0) + '/6</b> · ' + escapeHtml(lineResult) +
     '<div class="compare-grid">' + cells + '</div>' +
-    '<div>Percentile: <b>' + Number(record.percentile) + '°</b> · ' + verdict + '</div>' +
-    '<div class="small muted">Ogni casella conta quante delle 1.000 sestine virtuali hanno ottenuto quel numero di centri.</div>';
+    '<div>Percentile combinato: <b>' + Number(record.percentile) + '°</b> · ' + verdict + '</div>' +
+    '<div class="small muted">Ogni casella indica quanti dei 1.000 portafogli casuali hanno avuto quel miglior risultato tra le loro linee.</div>';
 }
 
 function renderBenchmark() {
@@ -759,33 +1077,57 @@ function renderBenchmark() {
     return;
   }
 
-  const averageHits = evaluated.reduce(function (sum, record) {
-    return sum + (Number(record.hits) || 0);
+  const averageBest = evaluated.reduce(function (sum, record) {
+    return sum + (Number(record.bestHits != null ? record.bestHits : record.hits) || 0);
   }, 0) / evaluated.length;
   const averagePercentile = evaluated.reduce(function (sum, record) {
     return sum + Number(record.percentile);
   }, 0) / evaluated.length;
+  const zeroPortfolios = evaluated.filter(function (record) { return Number(record.totalHits || 0) === 0; }).length;
+  const twoPlus = evaluated.filter(function (record) {
+    return Number(record.bestHits != null ? record.bestHits : record.hits) >= 2;
+  }).length;
   const standardError = 28.87 / Math.sqrt(evaluated.length);
   const low = Math.max(0, averagePercentile - 1.96 * standardError);
   const high = Math.min(100, averagePercentile + 1.96 * standardError);
 
   let verdict;
-  if (evaluated.length < 30) {
-    verdict = '<b class="warning-text">Campione insufficiente per un verdetto.</b>';
+  if (evaluated.length < 25) {
+    verdict = '<b class="warning-text">Campione reale ancora piccolo: nessun verdetto affidabile.</b>';
   } else if (low > 50) {
-    verdict = '<b class="positive">Segnale sopra il caso, da confermare su più estrazioni.</b>';
+    verdict = '<b class="positive">Segnale sopra il confronto casuale, da continuare a verificare.</b>';
   } else if (high < 50) {
-    verdict = '<b class="negative">Risultati inferiori al confronto casuale.</b>';
+    verdict = '<b class="negative">Portafogli reali inferiori al confronto casuale.</b>';
   } else {
     verdict = '<b>Risultati compatibili con il caso.</b>';
   }
 
   target.innerHTML = verdict + '<br>' +
-    'Proposte confrontabili: ' + evaluated.length +
-    ' · media hit: ' + averageHits.toFixed(2) +
+    'Portafogli confrontabili: ' + evaluated.length +
+    ' · best medio: ' + averageBest.toFixed(2) +
+    ' · almeno un 2+: ' + twoPlus +
+    ' · zero centri su tutte le linee: ' + zeroPortfolios +
     ' · percentile medio: ' + averagePercentile.toFixed(1) + '°' +
     ' · intervallo 95% circa: ' + low.toFixed(1) + '–' + high.toFixed(1) + '.<br>' +
-    '<span class="small muted">Il calcolo include tutte le proposte, giocate e non giocate, per evitare di scegliere i risultati a posteriori.</span>';
+    '<span class="small muted">Il confronto include anche i portafogli non giocati, così il risultato non viene selezionato a posteriori.</span>';
+}
+
+function pct(value, total) {
+  return total ? (100 * value / total).toFixed(1) + '%' : '—';
+}
+
+function holdoutLine(pair, count) {
+  if (!pair || !pair.algorithm || !pair.random) return '';
+  const a = pair.algorithm;
+  const r = pair.random;
+  const label = count + (count === 1 ? ' linea' : ' linee');
+  const diff = a.any2plus - r.any2plus;
+  const cls = diff > 0 ? 'positive' : diff < 0 ? 'negative' : '';
+  return '<tr><td>' + label + '</td>' +
+    '<td>' + a.any2plus + ' (' + pct(a.any2plus, a.n) + ')</td>' +
+    '<td>' + r.any2plus + ' (' + pct(r.any2plus, r.n) + ')</td>' +
+    '<td class="' + cls + '">' + (diff > 0 ? '+' : '') + diff + '</td>' +
+    '<td>' + a.zeroTotal + '</td><td>' + r.zeroTotal + '</td></tr>';
 }
 
 function renderModel() {
@@ -795,16 +1137,21 @@ function renderModel() {
     return;
   }
   if (model.version !== MODEL_VERSION) {
-    target.innerHTML = '<b>Modello precedente rilevato.</b> Esegui nuovamente “Analizza tutto” per applicare la separazione validazione/periodo finale della V5.3.';
+    target.innerHTML = '<b>Modello precedente rilevato.</b> Esegui “Analizza tutto” per creare il backtest V6.';
     return;
   }
 
-  const championTwoPlus = sumFrom(model.championHoldout || [], 2);
-  const randomTwoPlus = sumFrom(model.randomHoldout || [], 2);
+  const holdout = model.holdout || {};
+  const rows = [1, 2, 4].map(function (count) { return holdoutLine(holdout[String(count)], count); }).join('');
+  const validationDiff = Number(model.validation && model.validation.any2plus || 0) - Number(model.randomValidation && model.randomValidation.any2plus || 0);
+
   target.innerHTML = '<b>Modello selezionato:</b> ' + escapeHtml(model.weights.name) + '.<br>' +
-    'Validazione: ' + Number(model.validationN) + ' concorsi (' + escapeHtml(model.validationStart) + ' → ' + escapeHtml(model.validationEnd) + ').<br>' +
-    'Periodo finale mai usato nella scelta: ' + Number(model.holdoutN) + ' concorsi (' + escapeHtml(model.holdoutStart) + ' → ' + escapeHtml(model.holdoutEnd) + ').<br>' +
-    'Nel periodo finale, risultati 2+: algoritmo ' + championTwoPlus + ' · casuale ' + randomTwoPlus + '.';
+    'Validazione: ' + Number(model.validationN) + ' concorsi (' + escapeHtml(model.validationStart) + ' → ' + escapeHtml(model.validationEnd) + '). ' +
+    'A 4 linee: almeno un 2+ algoritmo ' + Number(model.validation && model.validation.any2plus || 0) + ' vs casuale ' + Number(model.randomValidation && model.randomValidation.any2plus || 0) +
+    ' (' + (validationDiff > 0 ? '+' : '') + validationDiff + ').<br>' +
+    'Holdout mai usato nella scelta: ' + Number(model.holdoutN) + ' concorsi (' + escapeHtml(model.holdoutStart) + ' → ' + escapeHtml(model.holdoutEnd) + ').' +
+    '<div class="scroll"><table class="mini-table"><thead><tr><th>Portafoglio</th><th>Algoritmo 2+</th><th>Casuale 2+</th><th>Δ</th><th>Zero alg.</th><th>Zero cas.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="small muted">“2+” significa almeno una linea con 2 o più numeri. “Zero” significa nessun numero centrato in nessuna linea del portafoglio.</div>';
 }
 
 function realizedMoney() {
@@ -814,7 +1161,7 @@ function realizedMoney() {
   }, 0);
   const settled = cash.filter(function (record) {
     if (!record.resultDate) return false;
-    if (Number(record.hits) < 2) return true;
+    if (playedPrizeThreshold(record) < 2) return true;
     return record.returnAmount !== '' && record.returnAmount != null && Number.isFinite(Number(record.returnAmount));
   });
   const settledSpent = settled.reduce(function (sum, record) {
@@ -825,7 +1172,7 @@ function realizedMoney() {
   }, 0);
   const pendingDraws = cash.filter(function (record) { return !record.resultDate; }).length;
   const missingPrizes = cash.filter(function (record) {
-    return record.resultDate && Number(record.hits) >= 2 && (record.returnAmount == null || record.returnAmount === '');
+    return record.resultDate && playedPrizeThreshold(record) >= 2 && (record.returnAmount == null || record.returnAmount === '');
   }).length;
   return {
     cash: cash,
@@ -861,49 +1208,52 @@ function renderMoney() {
   budgetBar.className = ratio >= 100 ? 'full' : ratio >= 75 ? 'warning' : '';
 
   const messages = ['Disponibili questo mese: ' + formatMoney(remaining) + ' su ' + formatMoney(monthlyBudget) + '.'];
-  if (!stats.cash.length) messages.push('Nessuna proposta è ancora conteggiata come spesa.');
+  if (!stats.cash.length) messages.push('Nessun portafoglio è ancora conteggiato come spesa.');
   if (stats.pendingDraws) messages.push(stats.pendingDraws + ' giocata/e attendono l’estrazione.');
-  if (stats.missingPrizes) messages.push('Inserisci l’incasso di ' + stats.missingPrizes + ' giocata/e premiata/e per completare il ROI.');
+  if (stats.missingPrizes) messages.push('Inserisci l’incasso di ' + stats.missingPrizes + ' giocata/e con almeno un 2+ per completare il ROI.');
   if (stats.settledSpent) messages.push('Profitto e ROI usano soltanto giocate già definite.');
   byId('moneyStatus').textContent = messages.join(' ');
 }
 
-function statusOptions(record) {
-  const selectedUnknown = record.played == null ? ' selected' : '';
-  const selectedPlayed = record.played === true ? ' selected' : '';
-  const selectedTest = record.played === false ? ' selected' : '';
-  return '<select data-field="played" data-id="' + escapeHtml(record.id) + '" aria-label="Stato proposta">' +
-    '<option value="unknown"' + selectedUnknown + '>Da confermare</option>' +
-    '<option value="played"' + selectedPlayed + '>Giocata 1 €</option>' +
-    '<option value="test"' + selectedTest + '>Solo test</option>' +
-    '</select>';
-}
-
 function returnField(record) {
   if (record.played !== true || !record.resultDate) return '—';
-  if (Number(record.hits) < 2) return formatMoney(0);
+  if (playedPrizeThreshold(record) < 2) return formatMoney(0);
   const value = record.returnAmount == null ? '' : Number(record.returnAmount).toFixed(2);
   return '<input data-field="return" data-id="' + escapeHtml(record.id) + '" type="number" min="0" step="0.01" inputmode="decimal" value="' + escapeHtml(value) + '" placeholder="€ 0,00" aria-label="Incasso effettivo">';
+}
+
+function diaryPortfolioText(record) {
+  const tickets = normalizeTickets(record);
+  return tickets.map(function (ticket, index) {
+    return 'L' + (index + 1) + ': ' + ticket.join(' ');
+  }).join(' / ');
+}
+
+function diaryState(record) {
+  if (record.played === true) return 'Giocate ' + Number(record.playedLines || 1) + ' · ' + formatMoney(record.cost);
+  if (record.played === false) return 'Solo test';
+  return record.resultDate ? 'Non confermata' : 'Da confermare';
 }
 
 function renderDiary() {
   const target = byId('diary');
   if (!diary.length) {
-    target.innerHTML = '<div class="status">Nessuna proposta registrata.</div>';
+    target.innerHTML = '<div class="status">Nessun portafoglio registrato.</div>';
     return;
   }
 
   const rows = diary.slice().reverse().map(function (record) {
     const result = record.resultDate ? escapeHtml(record.resultDate) + (record.legacySameDay ? '*' : '') : 'in attesa';
-    const hitText = record.hits == null ? '—' : Number(record.hits) + '/6';
+    const best = record.resultDate ? Number(record.bestHits != null ? record.bestHits : record.hits || 0) + '/6' : '—';
+    const playedBest = record.resultDate && record.played === true ? Number(record.playedBestHits || 0) + '/6 giocato' : '';
     const percentile = record.percentile == null ? '—' : Number(record.percentile) + '°';
     const cost = record.played === true ? formatMoney(record.cost || TICKET_COST) : formatMoney(0);
     return '<tr>' +
       '<td>' + escapeHtml(record.generatedDate || '') + '</td>' +
-      '<td><b>' + record.ticket.map(Number).join(' ') + '</b></td>' +
-      '<td>' + statusOptions(record) + '</td>' +
+      '<td class="portfolio-cell"><b>' + escapeHtml(diaryPortfolioText(record)) + '</b></td>' +
+      '<td>' + escapeHtml(diaryState(record)) + '</td>' +
       '<td>' + result + '</td>' +
-      '<td>' + hitText + '</td>' +
+      '<td>' + best + (playedBest ? '<div class="small muted">' + playedBest + '</div>' : '') + '</td>' +
       '<td>' + percentile + '</td>' +
       '<td>' + cost + '</td>' +
       '<td>' + returnField(record) + '</td>' +
@@ -915,7 +1265,7 @@ function renderDiary() {
     : '';
 
   target.innerHTML = '<table class="diary-table"><thead><tr>' +
-    '<th>Creata</th><th>Sestina</th><th>Stato</th><th>Estrazione</th><th>Hit</th><th>vs 1.000</th><th>Costo</th><th>Incasso €</th>' +
+    '<th>Creata</th><th>Portafoglio</th><th>Stato</th><th>Estrazione</th><th>Best</th><th>vs 1.000</th><th>Costo</th><th>Incasso €</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>' + legacyNote;
 }
 
@@ -928,9 +1278,12 @@ function render() {
   byId('kPending').textContent = pending.length;
   byId('kEvaluated').textContent = evaluated.length;
   byId('kAvg').textContent = evaluated.length
-    ? (evaluated.reduce(function (sum, record) { return sum + (Number(record.hits) || 0); }, 0) / evaluated.length).toFixed(2)
+    ? (evaluated.reduce(function (sum, record) {
+      return sum + (Number(record.bestHits != null ? record.bestHits : record.hits) || 0);
+    }, 0) / evaluated.length).toFixed(2)
     : '—';
 
+  renderCoverage();
   renderModel();
   renderDiary();
   renderBenchmark();
@@ -954,23 +1307,25 @@ function exportDiary() {
   }
 
   const header = [
-    'generata', 'sestina', 'stato', 'estrazione', 'estratti', 'hit', 'percentile', 'costo', 'incasso', 'profitto'
+    'generata', 'portafoglio', 'linee_giocate', 'stato', 'estrazione', 'estratti', 'best_portafoglio', 'best_giocato', 'percentile', 'costo', 'incasso', 'profitto'
   ];
   const rows = diary.map(function (record) {
     const state = record.played === true ? 'giocata' : record.played === false ? 'solo test' : 'da confermare';
     const cost = record.played === true ? Number(record.cost) || TICKET_COST : 0;
     const hasReturn = record.returnAmount !== '' && record.returnAmount != null && Number.isFinite(Number(record.returnAmount));
     const amount = hasReturn ? Number(record.returnAmount) : '';
-    const profit = record.played === true && record.resultDate && (Number(record.hits) < 2 || hasReturn)
+    const profit = record.played === true && record.resultDate && (playedPrizeThreshold(record) < 2 || hasReturn)
       ? Number(amount || 0) - cost
       : '';
     return [
       record.generatedDate,
-      record.ticket.join(' '),
+      diaryPortfolioText(record),
+      record.played === true ? Number(record.playedLines || 1) : 0,
       state,
       record.resultDate || '',
       (record.draw || []).join(' '),
-      record.hits == null ? '' : record.hits,
+      record.bestHits == null ? (record.hits == null ? '' : record.hits) : record.bestHits,
+      record.playedBestHits == null ? '' : record.playedBestHits,
       record.percentile == null ? '' : record.percentile,
       cost,
       amount,
@@ -982,38 +1337,17 @@ function exportDiary() {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.href = url;
-  link.download = 'superenalotto_v53_diario.csv';
+  link.download = 'superenalotto_v60_diario.csv';
   link.click();
   setTimeout(function () { URL.revokeObjectURL(url); }, 0);
 }
 
 function resetDiary() {
-  if (!window.confirm('Cancellare tutto il diario V5, comprese conferme di spesa e incassi?')) return;
+  if (!window.confirm('Cancellare tutto il diario, comprese conferme di spesa e incassi?')) return;
   diary = [];
-  localStorage.removeItem(V5_DIARY);
+  localStorage.removeItem(DIARY_STORE);
   byId('ticketBox').innerHTML = '';
   render();
-}
-
-function onDiaryChange(event) {
-  const field = event.target.dataset.field;
-  const recordId = event.target.dataset.id;
-  if (!field || !recordId) return;
-
-  if (field === 'played') {
-    if (event.target.value === 'played') setPlayState(recordId, true);
-    else if (event.target.value === 'test') setPlayState(recordId, false);
-    else {
-      const record = diary.find(function (item) { return item.id === recordId; });
-      if (record) {
-        record.played = null;
-        record.cost = 0;
-        record.returnAmount = null;
-        saveDiary();
-        render();
-      }
-    }
-  }
 }
 
 function onDiaryInput(event) {
@@ -1029,15 +1363,22 @@ function onDiaryInput(event) {
 function onTicketAction(event) {
   const button = event.target.closest('[data-ticket-action]');
   if (!button) return;
-  setPlayState(button.dataset.id, button.dataset.ticketAction === 'played');
+  if (button.dataset.ticketAction === 'play') {
+    setPlayState(button.dataset.id, true, Number(button.dataset.lines) || 1);
+  } else if (button.dataset.ticketAction === 'test') {
+    setPlayState(button.dataset.id, false, 0);
+  }
 }
 
 function onBudgetChange() {
-  const value = Math.min(100, Math.max(1, Math.round(Number(byId('monthlyBudget').value) || DEFAULT_BUDGET)));
+  const value = clamp(Math.round(Number(byId('monthlyBudget').value) || DEFAULT_BUDGET), 1, 100);
   monthlyBudget = value;
   byId('monthlyBudget').value = value;
   saveBudget();
   renderMoney();
+  const reference = currentReference();
+  const pendingRecord = pendingForReference(reference);
+  if (pendingRecord) renderTicket(pendingRecord);
 }
 
 byId('bUpdate').addEventListener('click', easyUpdate);
@@ -1046,7 +1387,6 @@ byId('bGenerate').addEventListener('click', easyGenerate);
 byId('exportBtn').addEventListener('click', exportDiary);
 byId('resetBtn').addEventListener('click', resetDiary);
 byId('monthlyBudget').addEventListener('change', onBudgetChange);
-byId('diary').addEventListener('change', onDiaryChange);
 byId('diary').addEventListener('input', onDiaryInput);
 byId('ticketBox').addEventListener('click', onTicketAction);
 
@@ -1060,7 +1400,7 @@ window.addEventListener('beforeinstallprompt', function (event) {
 window.addEventListener('appinstalled', function () {
   deferredInstallPrompt = null;
   byId('installBtn').textContent = 'Installata';
-  setUI('APP INSTALLATA', 'La scorciatoia usa ora l’icona SuperEnalotto.', 100, false);
+  setUI('APP INSTALLATA', 'La scorciatoia usa ora la V6.', 100, false);
 });
 
 byId('installBtn').addEventListener('click', async function () {

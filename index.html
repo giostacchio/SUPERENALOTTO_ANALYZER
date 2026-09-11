@@ -4,20 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="SuperEnalotto Analyzer V6: portafoglio diversificato, backtest storico, confronto casuale e controllo budget.">
-  <title>SuperEnalotto Analyzer V6.0</title>
+  <meta name="description" content="SuperEnalotto Analyzer V6.1: portafoglio diversificato, backtest storico, guard anti-overfitting e controllo budget.">
+  <title>SuperEnalotto Analyzer V6.1</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./app.js"></script>
+  <script defer src="./v61-guard.js"></script>
 </head>
 <body>
   <main class="wrap">
     <header class="hero">
       <div>
-        <div class="title">SuperEnalotto Analyzer <span class="version">V6.0</span></div>
-        <p>Copertura prima della previsione: 4 linee virtuali diversificate, confronto storico e verifica contro il caso.</p>
+        <div class="title">SuperEnalotto Analyzer <span class="version">V6.1</span></div>
+        <p>Copertura prima della previsione: 4 linee diversificate, confronto storico e guard automatico contro l’overfitting.</p>
       </div>
       <div class="hero-actions">
         <div class="badge">Portafoglio: 4 linee</div>
@@ -34,7 +35,7 @@
       <ol class="steps">
         <li><b>1</b><span><strong>Aggiorna</strong>Recupera le nuove estrazioni.</span></li>
         <li><b>2</b><span><strong>Analizza</strong>Backtest e periodo finale mai usato nella scelta.</span></li>
-        <li><b>3</b><span><strong>Genera</strong>Crea 4 linee con sovrapposizione ridotta.</span></li>
+        <li><b>3</b><span><strong>Genera</strong>Usa statistica solo se supera il casuale; altrimenti copertura neutra.</span></li>
       </ol>
       <div class="controls">
         <button id="bUpdate" class="info" type="button">1 · Aggiorna archivio</button>
@@ -44,15 +45,15 @@
       <div class="status run-status">
         <div id="mainStatus">Pronto: premi “Aggiorna archivio”.</div>
         <div class="progress"><i id="mainBar"></i></div>
-        <div id="mainSub" class="muted small">La V6 non cerca una sestina magica: misura copertura e confronto con portafogli casuali equivalenti.</div>
+        <div id="mainSub" class="muted small">La V6.1 non rincorre l’ultima vincita: se il modello non regge validazione e holdout, torna automaticamente neutro.</div>
       </div>
       <div id="ticketBox"></div>
     </section>
 
     <section class="card engine-card">
       <div class="section-head">
-        <div><span class="eyebrow">MOTORE V6</span><h2>Copertura del portafoglio</h2></div>
-        <span class="honest-chip">Pesi statistici soft</span>
+        <div><span class="eyebrow">MOTORE V6.1</span><h2>Copertura del portafoglio</h2></div>
+        <span class="honest-chip">Guard anti-overfitting</span>
       </div>
       <div class="summary-grid">
         <div class="kpi"><b id="kPoolCount">—</b><span>numeri nel pool analitico</span></div>
@@ -90,7 +91,7 @@
     </section>
 
     <section class="card">
-      <h2>Backtest V6 · algoritmo contro il caso</h2>
+      <h2>Backtest V6.1 · algoritmo contro il caso</h2>
       <div class="summary-grid">
         <div class="kpi"><b id="kDraws">0</b><span>estrazioni archivio</span></div>
         <div class="kpi"><b id="kPending">0</b><span>portafogli in attesa</span></div>
@@ -118,13 +119,13 @@
         <div><b>1 su 20,15</b><span>probabilità di almeno 2 numeri su una singola sestina</span></div>
         <div><b>1 su 622.614.630</b><span>probabilità di 6 su una singola sestina</span></div>
       </div>
-      <p>Ogni sestina specifica resta equiprobabile. La V6 prova a evitare linee quasi duplicate e a distribuire meglio il piccolo budget; frequenze, ritardi e anti-folla hanno peso volutamente basso e vengono accettati solo dopo un controllo su dati non usati nella scelta.</p>
+      <p>Ogni sestina specifica resta equiprobabile. La V6.1 privilegia la copertura e accetta i piccoli pesi statistici solo se non risultano peggiori del casuale sia nella validazione sia nell’holdout.</p>
     </section>
 
     <details class="card">
       <summary>Dettagli tecnici e backtest</summary>
       <div id="lab" class="status">Analisi non eseguita.</div>
-      <div class="note"><b>Controllo V6:</b> il modello viene scelto su validazione e misurato poi su un holdout separato. Vengono mostrati anche i confronti a 1, 2 e 4 linee per capire se la copertura sta davvero aggiungendo qualcosa rispetto al caso.</div>
+      <div class="note"><b>Guard V6.1:</b> se la strategia statistica non batte il casuale sia nel numero di portafogli con almeno un 2+ sia nella frequenza degli zero totali, la generazione successiva usa copertura neutra. Se passa, i pesi vengono comunque attenuati al 35%.</div>
     </details>
 
     <footer>Uso personale · nessuna garanzia di vincita · gioca soltanto somme che puoi perdere.</footer>

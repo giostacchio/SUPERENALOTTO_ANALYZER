@@ -4,24 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="SuperEnalotto Analyzer V6.1: portafoglio diversificato, backtest storico, guard anti-overfitting e controllo budget.">
-  <title>SuperEnalotto Analyzer V6.1</title>
+  <meta name="description" content="SuperEnalotto Analyzer V6.2: una sola sestina da 1 euro, scelta deterministica su storico, backtest e controllo anti-overfitting.">
+  <title>SuperEnalotto Analyzer V6.2</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./app.js"></script>
-  <script defer src="./v61-guard.js"></script>
+  <script defer src="./v62-single.js"></script>
 </head>
 <body>
   <main class="wrap">
     <header class="hero">
       <div>
-        <div class="title">SuperEnalotto Analyzer <span class="version">V6.1</span></div>
-        <p>Copertura prima della previsione: 4 linee diversificate, confronto storico e guard automatico contro l’overfitting.</p>
+        <div class="title">SuperEnalotto Analyzer <span class="version">V6.2</span></div>
+        <p>Una sola sestina da 1 € per concorso: punteggi su frequenze multi-finestra, ritardi, stabilità, coppie e forma storica della sestina. La scelta finale è deterministica, non casuale.</p>
       </div>
       <div class="hero-actions">
-        <div class="badge">Portafoglio: 4 linee</div>
+        <div class="badge">1 € = 1 sestina</div>
         <button id="installBtn" class="secondary compact" type="button">Installa</button>
         <button id="updateAppBtn" class="secondary compact" type="button">Aggiorna app</button>
       </div>
@@ -30,38 +30,38 @@
     <section class="card easy">
       <div class="section-head">
         <div><span class="eyebrow">PERCORSO PRINCIPALE</span><h1>Modalità Easy</h1></div>
-        <span class="honest-chip">Un solo portafoglio per concorso</span>
+        <span class="honest-chip">Una sola proposta per concorso</span>
       </div>
       <ol class="steps">
         <li><b>1</b><span><strong>Aggiorna</strong>Recupera le nuove estrazioni.</span></li>
-        <li><b>2</b><span><strong>Analizza</strong>Backtest e periodo finale mai usato nella scelta.</span></li>
-        <li><b>3</b><span><strong>Genera</strong>Usa statistica solo se supera il casuale; altrimenti copertura neutra.</span></li>
+        <li><b>2</b><span><strong>Analizza</strong>Seleziona i pesi con validazione e holdout separato.</span></li>
+        <li><b>3</b><span><strong>Genera</strong>Valuta tutte le combinazioni del pool finale e sceglie quella col punteggio più alto.</span></li>
       </ol>
       <div class="controls">
         <button id="bUpdate" class="info" type="button">1 · Aggiorna archivio</button>
         <button id="bAnalyze" class="primary" type="button">2 · Analizza tutto</button>
-        <button id="bGenerate" type="button">3 · Genera portafoglio</button>
+        <button id="bGenerate" type="button">3 · Genera 1 €</button>
       </div>
       <div class="status run-status">
         <div id="mainStatus">Pronto: premi “Aggiorna archivio”.</div>
         <div class="progress"><i id="mainBar"></i></div>
-        <div id="mainSub" class="muted small">La V6.1 non rincorre l’ultima vincita: se il modello non regge validazione e holdout, torna automaticamente neutro.</div>
+        <div id="mainSub" class="muted small">La V6.2 non usa randomizzazione nella sestina finale: a parità di storico e modello restituisce sempre la stessa proposta.</div>
       </div>
       <div id="ticketBox"></div>
     </section>
 
     <section class="card engine-card">
       <div class="section-head">
-        <div><span class="eyebrow">MOTORE V6.1</span><h2>Copertura del portafoglio</h2></div>
-        <span class="honest-chip">Guard anti-overfitting</span>
+        <div><span class="eyebrow">MOTORE V6.2</span><h2>Selezione deterministica</h2></div>
+        <span class="honest-chip">18 candidati → 18.564 sestine</span>
       </div>
       <div class="summary-grid">
         <div class="kpi"><b id="kPoolCount">—</b><span>numeri nel pool analitico</span></div>
-        <div class="kpi"><b id="kUniqueNumbers">—</b><span>numeri distinti nelle 4 linee</span></div>
-        <div class="kpi"><b id="kMaxOverlap">—</b><span>sovrapposizione massima</span></div>
-        <div class="kpi"><b id="kCoverageScore">—</b><span>indice copertura interna</span></div>
+        <div class="kpi"><b id="kUniqueNumbers">—</b><span>numeri nella sestina</span></div>
+        <div class="kpi"><b id="kMaxOverlap">—</b><span>overlap interno</span></div>
+        <div class="kpi"><b id="kCoverageScore">—</b><span>completezza sestina</span></div>
       </div>
-      <div id="coverageDetail" class="status">Genera un portafoglio per vedere la copertura effettiva.</div>
+      <div id="coverageDetail" class="status">Genera una sestina per vedere il risultato finale.</div>
     </section>
 
     <section class="card money-card">
@@ -71,9 +71,9 @@
           <span><input id="monthlyBudget" type="number" min="1" max="100" step="1" value="4"> €</span>
         </label>
       </div>
-      <p class="muted small">Le 4 linee vengono generate sempre come test. Prima dell’estrazione puoi decidere di giocarne 1, 2, 3 o 4; il diario congela la scelta.</p>
+      <p class="muted small">La proposta costa 1 €. Il diario la conserva anche se scegli di non giocarla, così il test non viene selezionato a posteriori.</p>
       <div class="money-grid">
-        <div class="kpi"><b id="kCashPlays">0</b><span>portafogli giocati</span></div>
+        <div class="kpi"><b id="kCashPlays">0</b><span>giocate confermate</span></div>
         <div class="kpi"><b id="kSpent">€ 0,00</b><span>spesa totale</span></div>
         <div class="kpi"><b id="kReturns">€ 0,00</b><span>incassi inseriti</span></div>
         <div class="kpi"><b id="kProfit">€ 0,00</b><span>profitto / perdita</span></div>
@@ -85,50 +85,50 @@
     </section>
 
     <section class="card">
-      <h2>Confronto con 1.000 portafogli casuali</h2>
-      <p class="muted">Dopo l’estrazione confrontiamo il miglior risultato delle nostre 4 linee con 1.000 portafogli casuali composti dallo stesso numero di linee.</p>
+      <h2>Confronto con 1.000 sestine casuali</h2>
+      <p class="muted">Dopo l’estrazione la proposta V6.2 viene confrontata con 1.000 sestine casuali virtuali. Il casuale serve solo come benchmark, non per generare la giocata.</p>
       <div id="lastCompare" class="status">Nessun confronto ancora disponibile.</div>
     </section>
 
     <section class="card">
-      <h2>Backtest V6.1 · algoritmo contro il caso</h2>
+      <h2>Backtest V6.2 · algoritmo contro il caso</h2>
       <div class="summary-grid">
         <div class="kpi"><b id="kDraws">0</b><span>estrazioni archivio</span></div>
-        <div class="kpi"><b id="kPending">0</b><span>portafogli in attesa</span></div>
-        <div class="kpi"><b id="kEvaluated">0</b><span>portafogli verificati</span></div>
-        <div class="kpi"><b id="kAvg">—</b><span>media miglior risultato</span></div>
+        <div class="kpi"><b id="kPending">0</b><span>proposte in attesa</span></div>
+        <div class="kpi"><b id="kEvaluated">0</b><span>proposte verificate</span></div>
+        <div class="kpi"><b id="kAvg">—</b><span>media numeri centrati</span></div>
       </div>
       <div id="benchmark" class="status">Nessun confronto disponibile.</div>
     </section>
 
     <section class="card">
       <div class="section-head">
-        <div><span class="eyebrow">SCELTA CONGELATA PRIMA DEL RISULTATO</span><h2>Diario portafogli e giocate</h2></div>
+        <div><span class="eyebrow">SCELTA CONGELATA PRIMA DEL RISULTATO</span><h2>Diario proposte e giocate</h2></div>
         <button id="exportBtn" class="secondary" type="button">Esporta CSV</button>
       </div>
-      <p class="muted small">Ogni portafoglio resta nel test anche se non viene giocato. Dopo che arriva l’estrazione, numero di linee giocate e costo non possono essere cambiati.</p>
+      <p class="muted small">Ogni sestina resta nel test anche se non viene acquistata. Dopo l’estrazione stato e costo non possono essere modificati.</p>
       <div id="diary" class="scroll"></div>
       <div class="controls footer-controls"><button id="resetBtn" class="danger" type="button">Azzera diario</button></div>
     </section>
 
     <section class="card reality">
-      <span class="eyebrow">REALTÀ MATEMATICA</span>
-      <h2>Più robusto non significa prevedere l’estrazione</h2>
+      <span class="eyebrow">COME LEGGERE IL RISULTATO</span>
+      <h2>Una scelta statistica non è una certezza</h2>
       <div class="theory-grid">
-        <div><b>95,04%</b><span>probabilità che una singola sestina si fermi a 0 o 1 numero</span></div>
-        <div><b>1 su 20,15</b><span>probabilità di almeno 2 numeri su una singola sestina</span></div>
-        <div><b>1 su 622.614.630</b><span>probabilità di 6 su una singola sestina</span></div>
+        <div><b>1 sestina</b><span>nessuna moltiplicazione della spesa</span></div>
+        <div><b>18.564</b><span>combinazioni valutate nel pool finale da 18 numeri</span></div>
+        <div><b>0 random</b><span>nella scelta della sestina proposta</span></div>
       </div>
-      <p>Ogni sestina specifica resta equiprobabile. La V6.1 privilegia la copertura e accetta i piccoli pesi statistici solo se non risultano peggiori del casuale sia nella validazione sia nell’holdout.</p>
+      <p>La V6.2 cerca strutture stabili nello storico e congela la proposta prima del risultato. Se esiste davvero un segnale sfruttabile, deve emergere nel diario e nel confronto con il benchmark nel tempo.</p>
     </section>
 
     <details class="card">
       <summary>Dettagli tecnici e backtest</summary>
       <div id="lab" class="status">Analisi non eseguita.</div>
-      <div class="note"><b>Guard V6.1:</b> se la strategia statistica non batte il casuale sia nel numero di portafogli con almeno un 2+ sia nella frequenza degli zero totali, la generazione successiva usa copertura neutra. Se passa, i pesi vengono comunque attenuati al 35%.</div>
+      <div class="note"><b>V6.2:</b> il modello usa frequenze su più finestre, ritardo attenuato, stabilità, coppie recenti e forma storica di somma/parità/distribuzione. La sestina finale è il massimo deterministico del pool, non un campionamento pesato.</div>
     </details>
 
-    <footer>Uso personale · nessuna garanzia di vincita · gioca soltanto somme che puoi perdere.</footer>
+    <footer>Uso personale · budget limitato · verifica il metodo sul diario reale nel tempo.</footer>
   </main>
 </body>
 </html>

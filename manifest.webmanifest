@@ -1,7 +1,7 @@
 {
-  "name": "SuperEnalotto Analyzer V5.3",
+  "name": "SuperEnalotto Analyzer V6.2",
   "short_name": "SE Analyzer",
-  "description": "Esperimento personale: una proposta per concorso, confronto con 1.000 casuali, budget e ROI reale",
+  "description": "Uso personale: una sola sestina da 1 euro, scelta deterministica su storico, backtest e diario verificabile",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -10,29 +10,9 @@
   "background_color": "#070c17",
   "theme_color": "#0b1020",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"icon-maskable-192.png","sizes":"192x192","type":"image/png","purpose":"maskable"},
+    {"src":"icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
   ]
 }

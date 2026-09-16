@@ -350,6 +350,26 @@
     title.appendChild(badge);
   }
 
+  function normalizeSingleUi() {
+    const box = document.getElementById('ticketBox');
+    if (box) {
+      box.querySelectorAll('h3,.ticket-note,.muted.small').forEach((node) => {
+        node.textContent = node.textContent
+          .replace('Portafoglio V6 · 4 linee', 'Sestina V6.2 · 1 linea')
+          .replace('Le 4 linee restano nel diario anche se ne giochi soltanto una.', 'La sestina resta nel diario anche se scegli di non giocarla.')
+          .replace('Portafoglio', 'Sestina');
+      });
+    }
+  }
+
+  function installUiObserver() {
+    normalizeSingleUi();
+    const box = document.getElementById('ticketBox');
+    if (!box || box.dataset.v62Observed) return;
+    box.dataset.v62Observed = '1';
+    new MutationObserver(normalizeSingleUi).observe(box, { childList: true, subtree: true });
+  }
+
   document.addEventListener('click', interceptGenerate, true);
-  window.addEventListener('load', addBadge);
+  window.addEventListener('load', () => { addBadge(); installUiObserver(); });
 })();
